@@ -148,7 +148,8 @@ from audited crates and WebCrypto.
    No server can do this for you, so keep the card.
 
 The log, the vault, the recovery card, proofs and verification are explained in more depth in
-[docs/CONCEPTS.md](docs/CONCEPTS.md).
+[docs/CONCEPTS.md](docs/CONCEPTS.md). To add rootcard to an application or run a host, start with
+[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
 
 ## The map
 
@@ -225,6 +226,7 @@ Planned (details in [docs/PLAN.md](docs/PLAN.md)):
 | | |
 |---|---|
 | [spec/SPEC.md](spec/SPEC.md) | The normative specification, with [test vectors](spec/vectors/) |
+| [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Adding rootcard to an application, running a host, checking proofs: code for each role |
 | [docs/CONCEPTS.md](docs/CONCEPTS.md) | The log, the vault, the recovery card, proofs and verification: how and when they are used |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, server usage, dependencies |
 | [docs/HOST_PROTOCOL.md](docs/HOST_PROTOCOL.md) | Recommended HTTP binding for hosts |

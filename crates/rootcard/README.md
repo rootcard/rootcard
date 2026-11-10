@@ -8,15 +8,17 @@ profiles, login, fetch and change messages, proofs, account files and recovery c
 > **New to rootcard?** Start with the [project README](https://github.com/rootcard/rootcard#readme): what rootcard is,
 > the two ways to use it (a safer username-and-password login for your own service, or an ID card across services),
 > how it compares with other login methods, and the roadmap.
+> To build with it, the [getting-started guide](https://github.com/rootcard/rootcard/blob/main/docs/GETTING_STARTED.md)
+> has code for each role.
 
 It is pure: no I/O, no clock and no randomness of its own. Time and random bytes are parameters. It produces and checks
 exactly the bytes of the npm package `rootcard`; both are tested against the shared vectors in `spec/vectors/`.
 
-```toml
+```sh
 # A host or relying party: verification only, no Argon2id, X25519 or AES-GCM in the build.
-rootcard = { version = "0.2", default-features = false }
+cargo add rootcard --no-default-features
 # A client or the key tool: vault cryptography as well (the default).
-rootcard = "0.2"
+cargo add rootcard
 ```
 
 ```rust

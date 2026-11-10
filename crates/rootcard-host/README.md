@@ -7,6 +7,8 @@ run on any number of servers in front of one shared store and with any HTTP fram
 > **New to rootcard?** Start with the [project README](https://github.com/rootcard/rootcard#readme): what rootcard is,
 > the two ways to use it (a safer username-and-password login for your own service, or an ID card across services),
 > how it compares with other login methods, and the roadmap.
+> To build with it, the [getting-started guide](https://github.com/rootcard/rootcard/blob/main/docs/GETTING_STARTED.md#3-a-host-rust)
+> has code for each role.
 
 - `Host::register`, `instance`, `events`, `lookup`, `log`, `locks`, `challenge`, `fetch`, `login`, the session endpoints
   and `peer_push` implement the rules of SPEC §17: receipts, idempotent retries, fork and staleness answers, address

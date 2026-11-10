@@ -8,6 +8,42 @@
 //! Time and random bytes are parameters ([HST-21], [IMP-1]): the application passes its clock and bytes from its secure
 //! generator. The host never sees a password and never decrypts a vault; it builds on the core without the `vault`
 //! feature.
+//!
+//! ## Getting started
+//!
+//! Configure a [`Host`] over three stores and hand each request of the binding to [`http::route`]. Paths are relative
+//! to the base URL and start with the API version ([`http::API_VERSION`]):
+//!
+//! ```
+//! use rootcard_host::http::{Request, route};
+//! use rootcard_host::store::{MemoryChallengeStore, MemoryIdentityStore, MemorySessionStore};
+//! use rootcard_host::{Host, HostConfig, RealmConfig, UsernamePolicy};
+//! use zeroize::Zeroizing;
+//!
+//! let config = HostConfig {
+//!     key_seed: Zeroizing::new([0xa1; 32]), // from the host's secret store ([HST-17])
+//!     retired_keys: Vec::new(),
+//!     urls: vec!["https://id.example.com".into()], // base URLs, never ending in /v0 ([HST-22])
+//!     realms: vec![RealmConfig { realm: "global".into(), policy: UsernamePolicy::DEFAULT }],
+//!     peers: Vec::new(),
+//! };
+//! config.check()?;
+//! let host = Host::new(config, MemoryIdentityStore::new(), MemoryChallengeStore::new(), MemorySessionStore::new());
+//!
+//! let req = Request { method: "GET".into(), path: "/v0/host".into(), ..Request::default() };
+//! let now = 1_800_000_000; // the system clock in real code ([HST-21])
+//! let res = route(&host, &req, now, &mut |b| getrandom::fill(b).expect("random"));
+//! assert_eq!(res.status, 200);
+//!
+//! // On the application's own endpoints, a bearer token from a login names the user ([HST-11]).
+//! assert_eq!(host.session("not-a-token", now).err().map(|e| e.status()), Some(401));
+//! # Ok::<(), rootcard::Error>(())
+//! ```
+//!
+//! The in-memory stores are for tests and development. A production host implements the [`store`] traits over shared
+//! storage (docs/ARCHITECTURE.md §3.1) and applies the rate limits of docs/HOST_PROTOCOL.md §6 in front of the router:
+//! this crate limits nothing itself ([HST-16]). `examples/host.rs` wires the router to `std::net`, and
+//! docs/GETTING_STARTED.md §3 walks through a host step by step.
 
 #![forbid(unsafe_code)]
 

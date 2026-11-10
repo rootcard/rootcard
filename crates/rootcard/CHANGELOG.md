@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- The crate documentation starts with a compiled tour (registration, a receipt, unlocking the vault, a proof) and points
+  to the new `docs/GETTING_STARTED.md`; the README adds the crate with `cargo add` instead of naming an old version.
 - `id::extended_tags` no longer panics on ids shorter than a tag or with characters of more than one byte, and
   `id::tag` takes the first 4 characters of any string: both count characters, as [HDL-6] says (found by the new
   differential test against the JS core; regression vectors in `spec/vectors/log.json`). Account ids are ASCII, so

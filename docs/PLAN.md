@@ -331,9 +331,15 @@ logs the same way.
   ahead of phase 6; the owner's one-time setup is docs/RELEASING.md §2)
 - [x] Release preparation for agents (docs/RELEASING.md, AGENTS.md rule 10) and `xtask release-check` (versions,
   changelogs, tag, vectors); CI packages every crate and the npm package on each pull request (dry run)
-- [ ] Documentation: crate docs, `README` per package, a "getting started" for apps and for hosts. Done so far: `CONTRIBUTING.md` (the rules of AGENTS.md for people), issue templates that send security reports to
-  private reporting, a pull request template, a code of conduct (Contributor Covenant 2.1) and funding information
-  (`.github/FUNDING.yml` and `funding` in the npm package, GitHub Sponsors)
+- [x] Documentation: crate docs, `README` per package, a "getting started" for apps and for hosts. Done:
+  [GETTING_STARTED.md](GETTING_STARTED.md) with code for an application client (registration and login in JS, run
+  against the example host), a host (configuration, routing, sessions on the application's own endpoints, a
+  production checklist that says rate limits are the application's, [HST-16]), a relying party and the key tool; a
+  compiled tour in the crate docs of `rootcard` (registration, receipt, unlock, proof) and `rootcard-host` (configure
+  and route); a README per package that links the guide. Also `CONTRIBUTING.md` (the rules of AGENTS.md for people),
+  issue templates that send security reports to private reporting, a pull request template, a code of conduct
+  (Contributor Covenant 2.1) and funding information (`.github/FUNDING.yml` and `funding` in the npm package, GitHub
+  Sponsors)
 - [ ] External review of the spec and the crypto use before `1.0.0`
 - [x] Host pointer: a host on a path of a shared domain (`https://example.com/rootcard`) can be named by the bare domain.
   Decided: `GET <origin>/.well-known/rootcard` → `{ v, base, api }` ([HST-23]); resolved only for a typed origin, only
