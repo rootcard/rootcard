@@ -340,6 +340,17 @@ logs the same way.
   issue templates that send security reports to private reporting, a pull request template, a code of conduct
   (Contributor Covenant 2.1) and funding information (`.github/FUNDING.yml` and `funding` in the npm package, GitHub
   Sponsors)
+- [ ] Every rule that a test can check is named by one (AGENTS.md rule 7). A comparison of SPEC's rule ids with the
+  ids cited in tests, vectors and fuzz targets found rules that no test named. Covered now: [LOG-3] (the event schema:
+  nine reject vectors, each refused before its signatures are checked), [KEY-5] (five other spellings of a valid key,
+  all `bad_key`), [CJ-7] (a log and a registration in another serialization verify to the same state and hashes, in
+  both cores and through the router), [CJ-10] (every router answer and every file the CLI writes is canonical),
+  [VLT-9] (no vault the flows build holds a recovery secret, in either core) and [HST-13] (a peer and the public
+  endpoints never see a vault; a peer push with one is `bad_field`). Not testable in this repository: the rules for
+  clients, applications or the document itself (the CLT, CNV, EXT, IMP, PWR and VEC rules, [HDL-2], [DAT-9],
+  [RLM-2]) and the SHOULD rules the application carries out ([HST-16], [FET-3]: rate limits, GETTING_STARTED.md
+  §3.4). Still open: [CHG-3], [DAT-5], [DAT-8], [HDL-4], [HST-2], [ID-4], [LGN-2], [LGN-3] and [USR-4], which follow
+  from tested rules but have no test of their own
 - [ ] External review of the spec and the crypto use before `1.0.0`
 - [x] Host pointer: a host on a path of a shared domain (`https://example.com/rootcard`) can be named by the bare domain.
   Decided: `GET <origin>/.well-known/rootcard` → `{ v, base, api }` ([HST-23]); resolved only for a typed origin, only

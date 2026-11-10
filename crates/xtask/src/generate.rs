@@ -702,6 +702,22 @@ fn primitives() -> Vec<V> {
             m().with("text", text).with("type", ty),
         ));
     }
+    // [KEY-5] one key has one string: every other spelling of the valid key's bytes is rejected.
+    let unused_bits = format!("{}h", &ok[..ok.len() - 1]);
+    for (text, name) in [
+        (ok.replace("ed25519:", "Ed25519:"), "type in upper case"),
+        (ok.replace('_', "/").replace('-', "+"), "standard base64 alphabet"),
+        (unused_bits, "non-zero unused bits"),
+        (format!(" {ok}"), "leading space"),
+        (ok.replace(':', ": "), "space after the colon"),
+    ] {
+        out.push(v(
+            &format!("key spelled differently: {name}"),
+            &["KEY-5"],
+            "parse_key",
+            m().with("text", text).with("type", "ed25519"),
+        ));
+    }
     out.push(v(
         "statement challenge",
         &["PRF-5"],
@@ -947,7 +963,7 @@ fn log_vectors(s: &Scenario) -> Vec<V> {
     ));
     out.push(v(
         "registered log",
-        &["LOG-12", "LOG-8", "LOG-10"],
+        &["LOG-12", "LOG-3", "LOG-8", "LOG-10"],
         "verify_log",
         log_input(&s.log1),
     ));
@@ -1052,6 +1068,23 @@ fn log_vectors(s: &Scenario) -> Vec<V> {
             set(ev1.clone(), "prev", base64url_encode(&[0; 32])).into(),
         ],
     );
+    // [LOG-3] the schema of every event after the inception; each is rejected before its signatures are checked.
+    for (name, event) in [
+        ("event without sigs", ev1.without("sigs")),
+        ("event without a body", ev1.without("body")),
+        ("event body is not an object", set(ev1.clone(), "body", "instance")),
+        (
+            "event sigs is not an array",
+            set(ev1.clone(), "sigs", Value::Object(m())),
+        ),
+        ("prev of 31 bytes", set(ev1.clone(), "prev", base64url_encode(&[0; 31]))),
+        ("prev is not base64url", set(ev1.clone(), "prev", "not base64url!")),
+        ("negative time", set(ev1.clone(), "time", -1i64)),
+        ("time is a string", set(ev1.clone(), "time", "1800000000")),
+        ("account is not an account id", set(ev1.clone(), "account", "Astra")),
+    ] {
+        rej(name, &["LOG-3"], vec![inc.clone().into(), event.into()]);
+    }
     let mut swapped = ev1.clone();
     let mut sigs = swapped
         .get("sigs")

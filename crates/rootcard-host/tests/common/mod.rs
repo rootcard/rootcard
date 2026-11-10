@@ -229,3 +229,56 @@ pub fn register_at(h: &TestHost, url: &str, username: &str, rng: &mut TestRandom
     assert_eq!(s, 201, "{v:?}");
     (reg, rk)
 }
+
+/// A valid but non-canonical serialization of `v` ([CJ-7] tests): members in reverse order, insignificant whitespace,
+/// and `A` and `/` written as escapes. It parses to the same value as `canonical(v)`.
+pub fn loose(v: &Value) -> Vec<u8> {
+    fn string(s: &str, out: &mut String) {
+        out.push('"');
+        for c in s.chars() {
+            match c {
+                'A' => out.push_str("\\u0041"),
+                '/' => out.push_str("\\/"),
+                '"' => out.push_str("\\\""),
+                '\\' => out.push_str("\\\\"),
+                c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+                c => out.push(c),
+            }
+        }
+        out.push('"');
+    }
+    fn value(v: &Value, out: &mut String) {
+        match v {
+            Value::Object(m) => {
+                out.push_str("{ ");
+                let members: Vec<_> = m.iter().collect();
+                for (i, (k, x)) in members.iter().rev().enumerate() {
+                    if i > 0 {
+                        out.push_str(",\n  ");
+                    }
+                    string(k, out);
+                    out.push_str(" : ");
+                    value(x, out);
+                }
+                out.push_str(" }");
+            }
+            Value::Array(a) => {
+                out.push_str("[ ");
+                for (i, x) in a.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(" , ");
+                    }
+                    value(x, out);
+                }
+                out.push_str(" ]");
+            }
+            Value::String(s) => string(s, out),
+            Value::Int(n) => out.push_str(&n.to_string()),
+            Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+        }
+    }
+    let mut out = String::from("\n");
+    value(v, &mut out);
+    out.push('\n');
+    out.into_bytes()
+}
