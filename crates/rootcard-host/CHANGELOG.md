@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.3 - 2026-11-11
+
 - The crate documentation shows a host configured and routed (a compiled example) and states that rate limits are the
   application's ([HST-16]); `docs/GETTING_STARTED.md` §3 walks through a host.
 

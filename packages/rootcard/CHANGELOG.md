@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.3 - 2026-11-11
+
 - The README links the new getting-started guide, whose registration and login code uses this package.
 - `parseLoginRequest` and `verifyLogin` limit `lock` to 16 bytes of UTF-8, not 16 UTF-16 units, as the Rust crate
   does and SPEC [LGN-1] now states. Lock ids are ASCII, so real requests are unaffected.
