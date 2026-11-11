@@ -4,6 +4,9 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- The crate documentation shows a host configured and routed (a compiled example) and states that rate limits are the
+  application's ([HST-16]); `docs/GETTING_STARTED.md` §3 walks through a host.
+
 ## 0.3.2 - 2026-11-06
 
 - `http::well_known(config, origin)` answers the host pointer `GET <origin>/.well-known/rootcard` ([HST-23]) with the

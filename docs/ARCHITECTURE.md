@@ -137,6 +137,9 @@ pub fn http::route(host, &Request, now, random) -> Response;       // the bindin
   application creates a session in whatever form it uses and calls `session_valid` (one indexed read, cacheable for 10
   s) on every use. Optional helpers create and check opaque tokens stored as SHA-256 hashes ([HST-10]).
 - **Retries** are recognized by the handlers ([HST-20]); the store only needs compare-and-swap.
+- **Rate limits are the application's.** They are keyed by network address, which only the server in front of the
+  handlers knows, so the crate limits nothing itself; the application applies HOST_PROTOCOL.md §6 before `http::route`
+  and answers `rate_limited` ([HST-16], THREAT_MODEL.md T11, T26).
 - **In-memory implementations** of the traits ship with the crate for tests and the example host; §3.1 is a SQL schema.
 - **No framework, no async runtime.** Handlers are plain functions over JSON values; `http::route` maps the binding onto
   them under the API version `http::API_VERSION` (`v0` until 1.0.0, HOST_PROTOCOL.md §1.3) and `examples/host.rs`
@@ -252,6 +255,7 @@ libraries are not (duplicate members, number forms, canonical padding), and they
 | [docs/DESIGN.md](DESIGN.md) | Motivation | Requirements and the original design (superseded where SPEC differs) |
 | [spec/SPEC.md](../spec/SPEC.md) | **Normative** | The format and the rules for every party |
 | [spec/vectors/](../spec/vectors/) | **Normative** | Shared test vectors |
+| [docs/GETTING_STARTED.md](GETTING_STARTED.md) | Guide | Code for each role: application client, host, relying party |
 | [docs/CONCEPTS.md](CONCEPTS.md) | Guide | The log, vault, recovery card, proofs and verification, citing SPEC rules |
 | [docs/THREAT_MODEL.md](THREAT_MODEL.md) | Security | Goals, attackers, threats, accepted risks |
 | [docs/HOST_PROTOCOL.md](HOST_PROTOCOL.md) | Binding | Recommended HTTP endpoints for hosts |

@@ -4,11 +4,11 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- The README links the new getting-started guide, whose registration and login code uses this package.
 - `parseLoginRequest` and `verifyLogin` limit `lock` to 16 bytes of UTF-8, not 16 UTF-16 units, as the Rust crate
   does and SPEC [LGN-1] now states. Lock ids are ASCII, so real requests are unaffected.
 - `extendedTags` and `tag` count characters (code points), not UTF-16 units, as [HDL-6] says and as the Rust crate
   does. Account ids are ASCII, so their tags do not change.
-
 - `package.json` has a `funding` link (GitHub Sponsors), shown by `npm fund`.
 
 ## 0.3.2 - 2026-11-06

@@ -527,7 +527,7 @@
           "seq": 1
         }
       },
-      "rules": ["LOG-12","LOG-8","LOG-10"]
+      "rules": ["LOG-12","LOG-3","LOG-8","LOG-10"]
     },
     {
       "input": {
@@ -2599,6 +2599,468 @@
       "name": "wrong prev",
       "op": "verify_log",
       "rules": ["LOG-12"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "event without sigs",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "event without a body",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": "instance",
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "event body is not an object",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": {},
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "event sigs is not an array",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "prev of 31 bytes",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "not base64url!",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "prev is not base64url",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": -1,
+            "v": 1
+          }
+        ]
+      },
+      "name": "negative time",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": "1800000000",
+            "v": 1
+          }
+        ]
+      },
+      "name": "time is a string",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "events": [
+          {
+            "body": {
+              "realm": "global",
+              "recovery": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+              "username": "Astra"
+            },
+            "kind": "incept",
+            "seq": 0,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "LyJMpX2eTQ1IFcIdFoYYR2m94pF1_b0vyAGO_VcVdsdOgCshPbRkr8pBuhW4mc3MiYcwDcVp0ZsnZ_c_9mSQAQ"
+              }
+            ],
+            "v": 1
+          },
+          {
+            "account": "Astra",
+            "body": {
+              "account_key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+              "home": {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "url": "https://a.example"
+              },
+              "reason": "register"
+            },
+            "kind": "instance",
+            "prev": "X5FomJyNITymdUxhyurpjA-qJq7wa5BPZM5ssU1Vpq8",
+            "seq": 1,
+            "sigs": [
+              {
+                "key": "ed25519:AYGF85DR2TW8vaBleS_hZt9coMNbiz6Ucd74JrIhK8I",
+                "sig": "37EyhhZclEXq943SMOgpEkTl-avLSswbVOwf1hj8ITY8UJunzajJJdY4OdH42R0cfUj5Y12L-lnCJJd1OimxDg"
+              },
+              {
+                "key": "ed25519:hUG237D22KcAeXcC79oHSHjxX8OyTKdpmh8vmLD8qiA",
+                "sig": "fbvmcbySSraxOFP0vUR1oBqB1hLyRf7IveFGhpPaXExDtC5246xyZueLEVQBlLcuWQWyExFDVfBGjUttS0SPCg"
+              },
+              {
+                "key": "ed25519:vHy8tWNjdfodgkNNRmck2SN39TuYBpXdSdJtDOEiBaU",
+                "sig": "0NpJpk8JZLUocNrFp64jtEFQBYzfm8CYThWIEfcz0B_Ke6SFUQKUUekoLvMJHu8IPJz6F9urvbvy-DLYOBIjAg"
+              }
+            ],
+            "time": 1800000000,
+            "v": 1
+          }
+        ]
+      },
+      "name": "account is not an account id",
+      "op": "verify_log",
+      "rules": ["LOG-3"]
     },
     {
       "error": "wrong_signer",

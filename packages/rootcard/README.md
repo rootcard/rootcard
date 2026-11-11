@@ -7,6 +7,8 @@ exactly the bytes of the Rust crate `rootcard`; both are tested against the shar
 > **New to rootcard?** Start with the [project README](https://github.com/rootcard/rootcard#readme): what rootcard is,
 > the two ways to use it (a safer username-and-password login for your own service, or an ID card across services),
 > how it compares with other login methods, and the roadmap.
+> To build with it, the [getting-started guide](https://github.com/rootcard/rootcard/blob/main/docs/GETTING_STARTED.md#2-an-application-client-javascript)
+> has code for each role.
 
 ```js
 import { verifyLog, verifyProof } from "rootcard";             // verification: hosts, relying parties, clients

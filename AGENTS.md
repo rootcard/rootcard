@@ -13,6 +13,8 @@ crates.io and an npm package on npmjs, from one monorepo. Security is the produc
 7. [docs/RELEASING.md](docs/RELEASING.md): how a release is prepared (by agents) and published (by the owner, through CI)
 8. [docs/CONCEPTS.md](docs/CONCEPTS.md): an informative guide to the log, vault, recovery card, proofs and verification.
    It cites SPEC rule ids; update it when a rule it explains changes
+9. [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md): code for applications, hosts and relying parties. Its examples
+   call the public API; update it when a function it shows or a flow it walks through changes
 
 ## Layout
 
@@ -30,7 +32,7 @@ tests/browser           the vectors and keytool.html in real browsers (Playwrigh
 tests/differential      the JS side of the differential test (`xtask differential`, not published)
 spec/SPEC.md            normative specification
 spec/vectors/*.json     shared test vectors (the facit for every implementation)
-docs/                   plan, design, concepts, architecture, threat model, host protocol, releasing
+docs/                   plan, design, concepts, getting started, architecture, threat model, host protocol, releasing
 docs/proposals/         drafts that are not normative yet (sign-in, linked accounts)
 .github/workflows       ci.yml (every push and PR), release.yml (publishes on a GitHub release), advisories.yml (daily)
 .github/ISSUE_TEMPLATE  issue templates; security reports go to private reporting (SECURITY.md)
@@ -129,7 +131,7 @@ PLAN.md that THREAT_MODEL.md did not know about. So, for every change:
 
 | If the change touches… | …also update |
 |---|---|
-| a public function, type or CLI command | the package's `CHANGELOG.md` (`## Unreleased`) and its README if the README shows it |
+| a public function, type or CLI command | the package's `CHANGELOG.md` (`## Unreleased`), its README and docs/GETTING_STARTED.md if they show it |
 | a spec rule, label or error code | SPEC (and §20 for codes), vectors, THREAT_MODEL.md if a threat or its mitigation changes |
 | an endpoint, status or header | HOST_PROTOCOL.md, and the router's tests |
 | a component, store trait, schema or dependency | ARCHITECTURE.md (§3.1 for the SQL schema, §5 for the budget) |

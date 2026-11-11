@@ -133,3 +133,33 @@ fn rotate_recovery_sends_nothing_when_the_new_card_cannot_be_saved() {
     assert!(stderr.contains("missing"), "{stderr}");
     assert!(!stderr.contains("Keep both cards"), "{stderr}");
 }
+
+/// [CJ-10] the files the tool writes are the canonical bytes of what they hold (and one line feed, as `keytool.html`
+/// writes them), so the CLI and the page write byte-identical files.
+#[test]
+fn files_are_written_canonical() {
+    let dir = scratch("canonical");
+    let out = rootcard(&[
+        "new",
+        "--realm",
+        "global",
+        "--username",
+        "Astra",
+        "--dir",
+        dir.to_str().unwrap(),
+    ]);
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let written: Vec<PathBuf> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.to_string_lossy().ends_with(".json"))
+        .collect();
+    assert_eq!(written.len(), 2, "a card and an account file: {written:?}");
+    for path in written {
+        let bytes = std::fs::read(&path).unwrap();
+        let (body, end) = bytes.split_at(bytes.len() - 1);
+        assert_eq!(end, b"\n");
+        let value = rootcard::json::parse_json(body).unwrap();
+        assert_eq!(canonical(&value), body, "{} is not canonical", path.display());
+    }
+}

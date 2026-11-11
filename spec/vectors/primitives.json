@@ -1194,6 +1194,56 @@
       "rules": ["KEY-1","KEY-2","KEY-3"]
     },
     {
+      "error": "bad_key",
+      "input": {
+        "text": "Ed25519:_RckOFqgx1tk-3jNYC-h2ZH96_drE8WO1wLqyDXp9hg",
+        "type": "ed25519"
+      },
+      "name": "key spelled differently: type in upper case",
+      "op": "parse_key",
+      "rules": ["KEY-5"]
+    },
+    {
+      "error": "bad_key",
+      "input": {
+        "text": "ed25519:/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg",
+        "type": "ed25519"
+      },
+      "name": "key spelled differently: standard base64 alphabet",
+      "op": "parse_key",
+      "rules": ["KEY-5"]
+    },
+    {
+      "error": "bad_key",
+      "input": {
+        "text": "ed25519:_RckOFqgx1tk-3jNYC-h2ZH96_drE8WO1wLqyDXp9hh",
+        "type": "ed25519"
+      },
+      "name": "key spelled differently: non-zero unused bits",
+      "op": "parse_key",
+      "rules": ["KEY-5"]
+    },
+    {
+      "error": "bad_key",
+      "input": {
+        "text": " ed25519:_RckOFqgx1tk-3jNYC-h2ZH96_drE8WO1wLqyDXp9hg",
+        "type": "ed25519"
+      },
+      "name": "key spelled differently: leading space",
+      "op": "parse_key",
+      "rules": ["KEY-5"]
+    },
+    {
+      "error": "bad_key",
+      "input": {
+        "text": "ed25519: _RckOFqgx1tk-3jNYC-h2ZH96_drE8WO1wLqyDXp9hg",
+        "type": "ed25519"
+      },
+      "name": "key spelled differently: space after the colon",
+      "op": "parse_key",
+      "rules": ["KEY-5"]
+    },
+    {
       "input": {
         "statement": {
           "for": "example.org",
