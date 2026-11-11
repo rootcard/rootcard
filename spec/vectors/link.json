@@ -1,0 +1,5616 @@
+{
+  "description": "Linked accounts: answers, tokens, descriptors, links, requests and checks (SPEC §12.3)",
+  "vectors": [
+    {
+      "input": {
+        "text": "7b226c6f67696e223a22616c696365222c226964223a3538333233312c2262696f223a6e756c6c2c2273636f7265223a312e352c22626967223a31323334353637383930313233343536373839302c2265223a3165332c226c697374223a5b6e756c6c2c312c2d302c2278225d7d"
+      },
+      "name": "an answer with null, fractions and large numbers",
+      "op": "parse_response_json",
+      "output": {
+        "value": {
+          "id": 583231,
+          "list": [1,"x"],
+          "login": "alice"
+        }
+      },
+      "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "text": "6e756c6c"
+      },
+      "name": "an answer that is null",
+      "op": "parse_response_json",
+      "output": {},
+      "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "text": "7b2262696f223a2241f09f98805c2f5c6e227d"
+      },
+      "name": "an answer with escapes",
+      "op": "parse_response_json",
+      "output": {
+        "value": {
+          "bio": "A😀/\n"
+        }
+      },
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "7b2261223a312c2261223a327d"
+      },
+      "name": "a duplicate member",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "7b2261223a6e756c6c2c2261223a2278227d"
+      },
+      "name": "a duplicate member whose first value is dropped",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "7b2261223a225c7564383030227d"
+      },
+      "name": "a lone surrogate escape",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "5b312e5d"
+      },
+      "name": "a number without digits after the point",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "5b31652b5d"
+      },
+      "name": "an exponent without digits",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "5b30315d"
+      },
+      "name": "a leading zero",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "7b7d2078"
+      },
+      "name": "trailing text",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "efbbbf7b7d"
+      },
+      "name": "a byte order mark",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d"
+      },
+      "name": "an answer nested 33 levels",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_json",
+      "input": {
+        "text": "22ff22"
+      },
+      "name": "an answer that is not UTF-8",
+      "op": "parse_response_json",
+      "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "the link token",
+      "op": "link_token",
+      "output": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+      "rules": ["LNK-5"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "52wwgvfv9rwkhkhn9t45s1c9rrvx8mrcrwy292pgg6f4hkqye1b0"
+      },
+      "name": "the link token of a lower-case id",
+      "op": "link_token",
+      "rules": ["LNK-5","ID-3"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "token alone",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "My rootcard: rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0."
+      },
+      "name": "token in a sentence",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "https://example.org/?rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0&x"
+      },
+      "name": "token in a URL",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0_"
+      },
+      "name": "token followed by an underscore",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "xrootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "token after a letter",
+      "op": "find_link_token",
+      "output": false,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B00"
+      },
+      "name": "token followed by a digit",
+      "op": "find_link_token",
+      "output": false,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:52wwgvfv9rwkhkhn9t45s1c9rrvx8mrcrwy292pgg6f4hkqye1b0"
+      },
+      "name": "token in lower case",
+      "op": "find_link_token",
+      "output": false,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "arootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0 rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "token after a bad occurrence",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:89144GJ289144GJ289144GJ289144GJ289144GJ289144GJ28910 rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "tokens of two identities",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 0,
+        "text": "rootcard:89144GJ289144GJ289144GJ289144GJ289144GJ289144GJ28910"
+      },
+      "name": "the token of another identity",
+      "op": "find_link_token",
+      "output": false,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 65475,
+        "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "token ending at the search limit",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "pad": 65476,
+        "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+      },
+      "name": "token past the search limit",
+      "op": "find_link_token",
+      "output": false,
+      "rules": ["LNK-6"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "hex": "ff726f6f74636172643a35325757475646563952574b484b484e395434355331433952525658384d5243525759323932504747364634484b515945314230fe"
+      },
+      "name": "token between bytes that are not UTF-8",
+      "op": "find_link_token",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "3F9C",
+        "text": ""
+      },
+      "name": "token search with an invalid id",
+      "op": "find_link_token",
+      "rules": ["LNK-6","ID-3"]
+    },
+    {
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "registry descriptor github",
+      "op": "parse_descriptor",
+      "output": {
+        "retired": false,
+        "rev": 1,
+        "service": "github"
+      },
+      "rules": ["LNK-22","LNK-19"]
+    },
+    {
+      "input": {
+        "descriptor": {
+          "checks": {
+            "*": [
+              {
+                "kind": "dns-txt",
+                "name": "_rootcard.{name}"
+              }
+            ]
+          },
+          "display": "https://{name}/",
+          "fields": {
+            "name": {
+              "type": "domain"
+            }
+          },
+          "rev": 1,
+          "service": "dns",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "registry descriptor dns",
+      "op": "parse_descriptor",
+      "output": {
+        "retired": false,
+        "rev": 1,
+        "service": "dns"
+      },
+      "rules": ["LNK-22","LNK-19"]
+    },
+    {
+      "input": {
+        "descriptor": {
+          "checks": {
+            "*": [
+              {
+                "kind": "http-text",
+                "url": "https://{name}/.well-known/rootcard-link"
+              }
+            ]
+          },
+          "display": "https://{name}/",
+          "fields": {
+            "name": {
+              "type": "domain"
+            }
+          },
+          "rev": 1,
+          "service": "web",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "registry descriptor web",
+      "op": "parse_descriptor",
+      "output": {
+        "retired": false,
+        "rev": 1,
+        "service": "web"
+      },
+      "rules": ["LNK-22","LNK-19"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 2
+        }
+      },
+      "name": "descriptor v 2",
+      "op": "parse_descriptor",
+      "rules": ["LNK-13"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active"
+        }
+      },
+      "name": "descriptor without v",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "url": "x",
+          "v": 1
+        }
+      },
+      "name": "descriptor with an unknown member",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "GitHub",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "descriptor with a bad service name",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 0,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "descriptor rev 0",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "paused",
+          "v": 1
+        }
+      },
+      "name": "descriptor with an unknown status",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "retired",
+          "v": 1
+        }
+      },
+      "name": "retired descriptor",
+      "op": "parse_descriptor",
+      "output": {
+        "retired": true,
+        "rev": 1,
+        "service": "github"
+      },
+      "rules": ["LNK-17"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "handle"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "descriptor with an unknown field type",
+      "op": "parse_descriptor",
+      "rules": ["LNK-13"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "kind": "http-html",
+                "url": "https://github.com/{name}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "descriptor with an unknown step kind",
+      "op": "parse_descriptor",
+      "rules": ["LNK-13"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/users/{name}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "renamable names without a uid",
+      "op": "parse_descriptor",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "uid that no step compares",
+      "op": "parse_descriptor",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "name that no step compares",
+      "op": "parse_descriptor",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "check that never looks for the token",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "http://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "plain http",
+      "op": "parse_descriptor",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://API.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "upper-case literal host",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://140.82.112.6/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "literal IP address host",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8","LNK-21"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "host without a path",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://{name}.github.io/x/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "token field in the host",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "placeholder after a host prefix",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user?id={uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "query in a template",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/u{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "placeholder inside a path segment",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}{name}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "two placeholders in one segment",
+      "op": "parse_descriptor",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{id}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "unknown placeholder",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "unclosed placeholder",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "ref placeholder in a check without a ref value",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://gist.github.com/{ref}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "ref placeholder in the display URL",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/*": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "wildcard in an equal pointer",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/b~2io"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "bad pointer escape",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "pointer without a leading slash",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "form without a check",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ],
+            "repo": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "check for an unknown form",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "five steps",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "z-a",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "reversed character range",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 40,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "min greater than max",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "token_in": ["/bio"],
+                "url": "https://api.github.com/user/{uid}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9/",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "uid with characters a link cannot hold",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22","LNK-1"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "*": [
+              {
+                "kind": "dns-txt",
+                "name": "{name}._rootcard"
+              }
+            ]
+          },
+          "display": "https://{name}/",
+          "fields": {
+            "name": {
+              "type": "domain"
+            }
+          },
+          "rev": 1,
+          "service": "dns",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "DNS name after the domain",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "descriptor": {
+          "checks": {
+            "bio": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "kind": "dns-txt",
+                "name": "_rootcard.{name}"
+              }
+            ],
+            "gist": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/login": "{name}"
+                },
+                "kind": "http-json",
+                "url": "https://api.github.com/user/{uid}"
+              },
+              {
+                "equal": {
+                  "/owner/id": "{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/files/*/content"],
+                "url": "https://api.github.com/gists/{ref}"
+              }
+            ]
+          },
+          "display": "https://github.com/{name}",
+          "fields": {
+            "name": {
+              "chars": "A-Za-z0-9-",
+              "compare": "ascii-ci",
+              "max": 39,
+              "min": 1,
+              "type": "token"
+            },
+            "ref": {
+              "bio": {
+                "type": "none"
+              },
+              "gist": {
+                "chars": "0-9a-f",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "uid": {
+              "chars": "0-9",
+              "max": 20,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "github",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "DNS name for a token field",
+      "op": "parse_descriptor",
+      "rules": ["LNK-22"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.name": "Astra"
+        }
+      },
+      "name": "no links",
+      "op": "parse_links",
+      "output": [],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:5b1c0ffee",
+                "service": "github",
+                "uid": "583231"
+              },
+              {
+                "name": "Alice-2",
+                "ref": "bio",
+                "service": "github",
+                "uid": "9"
+              },
+              {
+                "name": "example.org",
+                "service": "dns"
+              },
+              {
+                "name": "xn--bcher-kva.example",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "links of three services",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "Alice-2",
+            "ref": "bio",
+            "service": "github",
+            "uid": "9"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "example.org",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "xn--bcher-kva.example",
+            "service": "web"
+          },
+          "status": "ok"
+        }
+      ],
+      "rules": ["LNK-1","LNK-2"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [],
+            "v": 2
+          }
+        }
+      },
+      "name": "links v 2",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "data": {
+          "user.links": {
+            "links": []
+          }
+        }
+      },
+      "name": "links without v",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [],
+            "v": 1,
+            "x": true
+          }
+        }
+      },
+      "name": "links with an extra member",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "data": {
+          "user.links": {
+            "links": {},
+            "v": 1
+          }
+        }
+      },
+      "name": "links that are not a list",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "data": {
+          "user.links": "github:alice"
+        }
+      },
+      "name": "links that are a string",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "d0.example",
+                "service": "dns"
+              },
+              {
+                "name": "d1.example",
+                "service": "dns"
+              },
+              {
+                "name": "d2.example",
+                "service": "dns"
+              },
+              {
+                "name": "d3.example",
+                "service": "dns"
+              },
+              {
+                "name": "d4.example",
+                "service": "dns"
+              },
+              {
+                "name": "d5.example",
+                "service": "dns"
+              },
+              {
+                "name": "d6.example",
+                "service": "dns"
+              },
+              {
+                "name": "d7.example",
+                "service": "dns"
+              },
+              {
+                "name": "d8.example",
+                "service": "dns"
+              },
+              {
+                "name": "d9.example",
+                "service": "dns"
+              },
+              {
+                "name": "d10.example",
+                "service": "dns"
+              },
+              {
+                "name": "d11.example",
+                "service": "dns"
+              },
+              {
+                "name": "d12.example",
+                "service": "dns"
+              },
+              {
+                "name": "d13.example",
+                "service": "dns"
+              },
+              {
+                "name": "d14.example",
+                "service": "dns"
+              },
+              {
+                "name": "d15.example",
+                "service": "dns"
+              },
+              {
+                "name": "d16.example",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          }
+        }
+      },
+      "name": "17 links",
+      "op": "parse_links",
+      "rules": ["LNK-1","LNK-2","LNK-13"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "d0.example",
+                "service": "dns"
+              },
+              {
+                "name": "d1.example",
+                "service": "dns"
+              },
+              {
+                "name": "d2.example",
+                "service": "dns"
+              },
+              {
+                "name": "d3.example",
+                "service": "dns"
+              },
+              {
+                "name": "d4.example",
+                "service": "dns"
+              },
+              {
+                "name": "d5.example",
+                "service": "dns"
+              },
+              {
+                "name": "d6.example",
+                "service": "dns"
+              },
+              {
+                "name": "d7.example",
+                "service": "dns"
+              },
+              {
+                "name": "d8.example",
+                "service": "dns"
+              },
+              {
+                "name": "d9.example",
+                "service": "dns"
+              },
+              {
+                "name": "d10.example",
+                "service": "dns"
+              },
+              {
+                "name": "d11.example",
+                "service": "dns"
+              },
+              {
+                "name": "d12.example",
+                "service": "dns"
+              },
+              {
+                "name": "d13.example",
+                "service": "dns"
+              },
+              {
+                "name": "d14.example",
+                "service": "dns"
+              },
+              {
+                "name": "d15.example",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "16 links",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "d0.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d1.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d2.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d3.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d4.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d5.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d6.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d7.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d8.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d9.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d10.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d11.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d12.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d13.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d14.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "d15.example",
+            "service": "dns"
+          },
+          "status": "ok"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org",
+                "service": "dns",
+                "url": "https://evil.example/"
+              },
+              {
+                "name": "example.org",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link with an unknown member",
+      "op": "parse_links",
+      "output": [
+        {
+          "status": "bad_link"
+        },
+        {
+          "link": {
+            "name": "example.org",
+            "service": "web"
+          },
+          "status": "ok"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": ["dns:example.org"],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link that is not an object",
+      "op": "parse_links",
+      "output": [
+        {
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": 5,
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link with a number name",
+      "op": "parse_links",
+      "output": [
+        {
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link with an empty name",
+      "op": "parse_links",
+      "output": [
+        {
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org",
+                "service": "Dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link with a bad service name",
+      "op": "parse_links",
+      "output": [
+        {
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-1"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "bio",
+                "service": "gitlab",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a link to an unknown service",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "bio",
+            "service": "gitlab",
+            "uid": "1"
+          },
+          "status": "unsupported"
+        }
+      ],
+      "rules": ["LNK-13"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "al.ice",
+                "ref": "bio",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub name with a dot",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "al.ice",
+            "ref": "bio",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "ref": "bio",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub name of 40 characters",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "ref": "bio",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "bio",
+                "service": "github"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub link without uid",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "bio",
+            "service": "github"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-18"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "bio",
+                "service": "github",
+                "uid": "58x"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub uid with letters",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "bio",
+            "service": "github",
+            "uid": "58x"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub link without ref",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "repo:alice/x",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub ref of an unknown form",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "repo:alice/x",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "unsupported"
+        }
+      ],
+      "rules": ["LNK-13"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "bio:x",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub ref with a value for bio",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "bio:x",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub gist ref without a value",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub gist ref with an empty value",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:5B1C",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a GitHub gist ref in upper case",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:5B1C",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "Gist:5b1c",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a ref form with a bad character",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "Gist:5b1c",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:..",
+                "service": "github",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a dot-segment gist value",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:..",
+            "service": "github",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-8"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org",
+                "service": "dns",
+                "uid": "1"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a domain link with a uid",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "example.org",
+            "service": "dns",
+            "uid": "1"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org",
+                "ref": "txt",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a domain link with a ref",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "example.org",
+            "ref": "txt",
+            "service": "dns"
+          },
+          "status": "unsupported"
+        }
+      ],
+      "rules": ["LNK-13"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "Example.org",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a domain in upper case",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "Example.org",
+            "service": "web"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-21"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "192.168.0.1",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "an IP address as a domain",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "192.168.0.1",
+            "service": "web"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-21"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "localhost",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a single-label domain",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "localhost",
+            "service": "web"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-21"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org.",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a domain with a trailing dot",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "example.org.",
+            "service": "dns"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-21"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "bücher.example",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a Unicode domain",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "bücher.example",
+            "service": "web"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-21","LNK-12"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:5b1c0ffee",
+                "service": "github",
+                "uid": "583231"
+              },
+              {
+                "name": "ALICE",
+                "ref": "bio",
+                "service": "github",
+                "uid": "583231"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "the same GitHub account twice",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "ALICE",
+            "ref": "bio",
+            "service": "github",
+            "uid": "583231"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "example.org",
+                "service": "dns"
+              },
+              {
+                "name": "example.org",
+                "service": "web"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "the same domain for two services",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "example.org",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "example.org",
+            "service": "web"
+          },
+          "status": "ok"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "Example.org",
+                "service": "dns"
+              },
+              {
+                "name": "example.org",
+                "service": "dns"
+              },
+              {
+                "name": "example.org",
+                "service": "dns"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        }
+      },
+      "name": "a duplicate after an invalid link",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "Example.org",
+            "service": "dns"
+          },
+          "status": "bad_link"
+        },
+        {
+          "link": {
+            "name": "example.org",
+            "service": "dns"
+          },
+          "status": "ok"
+        },
+        {
+          "link": {
+            "name": "example.org",
+            "service": "dns"
+          },
+          "status": "bad_link"
+        }
+      ],
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "data": {
+          "user.links": {
+            "links": [
+              {
+                "name": "alice",
+                "ref": "gist:5b1c0ffee",
+                "service": "github",
+                "uid": "583231"
+              }
+            ],
+            "v": 1
+          },
+          "user.name": "Astra"
+        },
+        "descriptors": [
+          {
+            "checks": {
+              "bio": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/login": "{name}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/bio"],
+                  "url": "https://api.github.com/user/{uid}"
+                }
+              ],
+              "gist": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/login": "{name}"
+                  },
+                  "kind": "http-json",
+                  "url": "https://api.github.com/user/{uid}"
+                },
+                {
+                  "equal": {
+                    "/owner/id": "{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/files/*/content"],
+                  "url": "https://api.github.com/gists/{ref}"
+                }
+              ]
+            },
+            "display": "https://github.com/{name}",
+            "fields": {
+              "name": {
+                "chars": "A-Za-z0-9-",
+                "compare": "ascii-ci",
+                "max": 39,
+                "min": 1,
+                "type": "token"
+              },
+              "ref": {
+                "bio": {
+                  "type": "none"
+                },
+                "gist": {
+                  "chars": "0-9a-f",
+                  "max": 64,
+                  "min": 1,
+                  "type": "token"
+                }
+              },
+              "uid": {
+                "chars": "0-9",
+                "max": 20,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "github",
+            "status": "retired",
+            "v": 1
+          },
+          {
+            "checks": {
+              "*": [
+                {
+                  "kind": "dns-txt",
+                  "name": "_rootcard.{name}"
+                }
+              ]
+            },
+            "display": "https://{name}/",
+            "fields": {
+              "name": {
+                "type": "domain"
+              }
+            },
+            "rev": 1,
+            "service": "dns",
+            "status": "active",
+            "v": 1
+          }
+        ]
+      },
+      "name": "a link to a retired service",
+      "op": "parse_links",
+      "output": [
+        {
+          "link": {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          "status": "unsupported"
+        }
+      ],
+      "rules": ["LNK-17"]
+    },
+    {
+      "input": {
+        "links": [
+          {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          {
+            "name": "example.org",
+            "service": "dns"
+          }
+        ]
+      },
+      "name": "links value",
+      "op": "links_value",
+      "output": {
+        "links": [
+          {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          {
+            "name": "example.org",
+            "service": "dns"
+          }
+        ],
+        "v": 1
+      },
+      "rules": ["LNK-1","LNK-4"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "links": [
+          {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          },
+          {
+            "name": "alice",
+            "ref": "gist:5b1c0ffee",
+            "service": "github",
+            "uid": "583231"
+          }
+        ]
+      },
+      "name": "links value with a duplicate",
+      "op": "links_value",
+      "rules": ["LNK-2","LNK-4"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "links": [
+          {
+            "name": "alice",
+            "service": "gitlab"
+          }
+        ]
+      },
+      "name": "links value with an unknown service",
+      "op": "links_value",
+      "rules": ["LNK-13","LNK-4"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "links": [
+          {
+            "name": "example",
+            "service": "dns"
+          }
+        ]
+      },
+      "name": "links value with an invalid link",
+      "op": "links_value",
+      "rules": ["LNK-2","LNK-4"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "links": [
+          {
+            "name": "d0.example",
+            "service": "dns"
+          },
+          {
+            "name": "d1.example",
+            "service": "dns"
+          },
+          {
+            "name": "d2.example",
+            "service": "dns"
+          },
+          {
+            "name": "d3.example",
+            "service": "dns"
+          },
+          {
+            "name": "d4.example",
+            "service": "dns"
+          },
+          {
+            "name": "d5.example",
+            "service": "dns"
+          },
+          {
+            "name": "d6.example",
+            "service": "dns"
+          },
+          {
+            "name": "d7.example",
+            "service": "dns"
+          },
+          {
+            "name": "d8.example",
+            "service": "dns"
+          },
+          {
+            "name": "d9.example",
+            "service": "dns"
+          },
+          {
+            "name": "d10.example",
+            "service": "dns"
+          },
+          {
+            "name": "d11.example",
+            "service": "dns"
+          },
+          {
+            "name": "d12.example",
+            "service": "dns"
+          },
+          {
+            "name": "d13.example",
+            "service": "dns"
+          },
+          {
+            "name": "d14.example",
+            "service": "dns"
+          },
+          {
+            "name": "d15.example",
+            "service": "dns"
+          },
+          {
+            "name": "d16.example",
+            "service": "dns"
+          }
+        ]
+      },
+      "name": "links value with 17 links",
+      "op": "links_value",
+      "rules": ["LNK-1","LNK-4"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        }
+      },
+      "name": "requests for a GitHub bio link",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "http-json",
+          "url": "https://api.github.com/user/583231"
+        }
+      ],
+      "rules": ["LNK-8","LNK-10"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        }
+      },
+      "name": "display URL of a GitHub bio link",
+      "op": "link_display",
+      "output": "https://github.com/Alice",
+      "rules": ["LNK-12"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        }
+      },
+      "name": "requests for a GitHub gist link",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "http-json",
+          "url": "https://api.github.com/user/583231"
+        },
+        {
+          "kind": "http-json",
+          "url": "https://api.github.com/gists/5b1c0ffee"
+        }
+      ],
+      "rules": ["LNK-8","LNK-10"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        }
+      },
+      "name": "display URL of a GitHub gist link",
+      "op": "link_display",
+      "output": "https://github.com/alice",
+      "rules": ["LNK-12"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        }
+      },
+      "name": "requests for a DNS link",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "dns-txt",
+          "name": "_rootcard.example.org"
+        }
+      ],
+      "rules": ["LNK-8","LNK-10"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        }
+      },
+      "name": "display URL of a DNS link",
+      "op": "link_display",
+      "output": "https://example.org/",
+      "rules": ["LNK-12"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        }
+      },
+      "name": "requests for a web link",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "http-text",
+          "url": "https://astra.dev/.well-known/rootcard-link"
+        }
+      ],
+      "rules": ["LNK-8","LNK-10"]
+    },
+    {
+      "input": {
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        }
+      },
+      "name": "display URL of a web link",
+      "op": "link_display",
+      "output": "https://astra.dev/",
+      "rules": ["LNK-12"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "link": {
+          "name": "alice",
+          "service": "github",
+          "uid": "1"
+        }
+      },
+      "name": "requests for an invalid link",
+      "op": "link_requests",
+      "rules": ["LNK-2","LNK-10"]
+    },
+    {
+      "error": "unsupported",
+      "input": {
+        "link": {
+          "name": "alice",
+          "service": "gitlab"
+        }
+      },
+      "name": "requests for an unknown service",
+      "op": "link_requests",
+      "rules": ["LNK-13"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "service": "web"
+      },
+      "name": "requests with another service's descriptor",
+      "op": "link_requests",
+      "rules": ["LNK-10"]
+    },
+    {
+      "input": {
+        "descriptor": {
+          "checks": {
+            "*": [
+              {
+                "equal": {
+                  "/id": "{uid}",
+                  "/name": "{name}",
+                  "/tag": "id-{uid}"
+                },
+                "kind": "http-json",
+                "token_in": ["/about","/links/*/text"],
+                "url": "https://example.org/u/{name}/{uid}"
+              }
+            ]
+          },
+          "display": "https://example.org/u/{name}",
+          "fields": {
+            "name": {
+              "chars": "!-~",
+              "max": 64,
+              "min": 1,
+              "type": "token"
+            },
+            "uid": {
+              "chars": "0-9A-Za-z.:_-",
+              "max": 64,
+              "min": 1,
+              "type": "token"
+            }
+          },
+          "rev": 1,
+          "service": "test",
+          "status": "active",
+          "v": 1
+        }
+      },
+      "name": "test descriptor",
+      "op": "parse_descriptor",
+      "output": {
+        "retired": false,
+        "rev": 1,
+        "service": "test"
+      },
+      "rules": ["LNK-22"]
+    },
+    {
+      "input": {
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "a/b?#%&+",
+          "service": "test",
+          "uid": "x.y:z"
+        }
+      },
+      "name": "values are percent-encoded",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "http-json",
+          "url": "https://example.org/u/a%2Fb%3F%23%25%26%2B/x.y%3Az"
+        }
+      ],
+      "rules": ["LNK-8"]
+    },
+    {
+      "input": {
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "a/b?#%&+",
+          "service": "test",
+          "uid": "x.y:z"
+        }
+      },
+      "name": "display values are percent-encoded",
+      "op": "link_display",
+      "output": "https://example.org/u/a%2Fb%3F%23%25%26%2B",
+      "rules": ["LNK-8","LNK-12"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": ".",
+          "service": "test",
+          "uid": "1"
+        }
+      },
+      "name": "the name \".\" is never a value",
+      "op": "link_requests",
+      "rules": ["LNK-8"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "..",
+          "service": "test",
+          "uid": "1"
+        }
+      },
+      "name": "the name \"..\" is never a value",
+      "op": "link_requests",
+      "rules": ["LNK-8"]
+    },
+    {
+      "input": {
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "...",
+          "service": "test",
+          "uid": "1"
+        }
+      },
+      "name": "the name ... is a value",
+      "op": "link_requests",
+      "output": [
+        {
+          "kind": "http-json",
+          "url": "https://example.org/u/.../1"
+        }
+      ],
+      "rules": ["LNK-8"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio verifies",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-10","LNK-6"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice2\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio of a renamed account",
+      "op": "check_link",
+      "rules": ["LNK-18","LNK-10"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583232,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio of another account",
+      "op": "check_link",
+      "rules": ["LNK-18","LNK-10"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":\"583231\",\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub id as a string",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231.0,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub id as a fraction",
+      "op": "check_link",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer.\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio without the token",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio null",
+      "op": "check_link",
+      "rules": ["LNK-10","LNK-9"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"rootcard:89144GJ289144GJ289144GJ289144GJ289144GJ289144GJ28910\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub bio with another identity's token",
+      "op": "check_link",
+      "rules": ["LNK-6","LNK-10"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"x\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub token outside the bio",
+      "op": "check_link",
+      "rules": ["LNK-7"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "failed": true
+          }
+        ]
+      },
+      "name": "GitHub request failed",
+      "op": "check_link",
+      "rules": ["LNK-9","LNK-10"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "<html>rate limited</html>"
+          }
+        ]
+      },
+      "name": "GitHub answer that is not JSON",
+      "op": "check_link",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "pad": 65280,
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub answer over 64 KiB",
+      "op": "check_link",
+      "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "pad": 65279,
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub answer of exactly 64 KiB",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "Alice",
+          "ref": "bio",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"id\":1,\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":\"Astronomer. rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub answer with a duplicate member",
+      "op": "check_link",
+      "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":{\"login\":\"alice\",\"id\":583231},\"comments\":1,\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist verifies",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-10","LNK-7"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":{\"login\":\"mallory\",\"id\":7},\"comments\":1,\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist of another owner",
+      "op": "check_link",
+      "rules": ["LNK-18","LNK-10"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":null,\"comments\":1,\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist without an owner",
+      "op": "check_link",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"hi\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":{\"login\":\"alice\",\"id\":583231},\"comments\":1,\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist without the token",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"hi\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":{\"login\":\"alice\",\"id\":583231},\"comments\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\",\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist token only in a comment field",
+      "op": "check_link",
+      "rules": ["LNK-7"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"bob\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "text": "{\"id\":\"5b1c0ffee\",\"public\":true,\"files\":{\"rootcard.txt\":{\"filename\":\"rootcard.txt\",\"size\":61,\"content\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"},\"other.md\":{\"filename\":\"other.md\",\"content\":\"hello\"}},\"owner\":{\"login\":\"alice\",\"id\":583231},\"comments\":1,\"history\":[]}"
+          }
+        ]
+      },
+      "name": "GitHub gist of a renamed account",
+      "op": "check_link",
+      "rules": ["LNK-18"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          }
+        ]
+      },
+      "name": "GitHub gist with one answer",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":583231,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "failed": true
+          }
+        ]
+      },
+      "name": "GitHub gist, second request failed",
+      "op": "check_link",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "alice",
+          "ref": "gist:5b1c0ffee",
+          "service": "github",
+          "uid": "583231"
+        },
+        "responses": [
+          {
+            "text": "{\"login\":\"alice\",\"id\":1,\"node_id\":\"MDQ6VXNlcjU4MzIzMQ==\",\"type\":\"User\",\"site_admin\":false,\"name\":null,\"company\":null,\"bio\":null,\"public_repos\":8,\"created_at\":\"2011-03-01T12:00:00Z\"}"
+          },
+          {
+            "failed": true
+          }
+        ]
+      },
+      "name": "GitHub gist, first step fails before the second",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "responses": [
+          {
+            "txt": [
+              ["v=spf1 -all"],
+              ["rootcard:","52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"]
+            ]
+          }
+        ]
+      },
+      "name": "DNS verifies",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "responses": [
+          {
+            "txt": [
+              ["rootcard:"],
+              ["52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"]
+            ]
+          }
+        ]
+      },
+      "name": "DNS token split across two records",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "responses": [
+          {
+            "txt": []
+          }
+        ]
+      },
+      "name": "DNS without records",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "fetch_failed",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "responses": [
+          {
+            "failed": true
+          }
+        ]
+      },
+      "name": "DNS lookup failed",
+      "op": "check_link",
+      "rules": ["LNK-9"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "example.org",
+          "service": "dns"
+        },
+        "responses": [
+          {
+            "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+          }
+        ]
+      },
+      "name": "DNS answered with a body",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\n"
+          }
+        ]
+      },
+      "name": "web file verifies",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-10"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "text": "<p>rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0</p>"
+          }
+        ]
+      },
+      "name": "web file with HTML around the token",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-6"]
+    },
+    {
+      "error": "token_missing",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "text": "hello"
+          }
+        ]
+      },
+      "name": "web file without the token",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "txt": [
+              ["rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"]
+            ]
+          }
+        ]
+      },
+      "name": "web file answered with TXT records",
+      "op": "check_link",
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "bad_field",
+      "input": {
+        "account": "3F9C",
+        "link": {
+          "name": "astra.dev",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+          }
+        ]
+      },
+      "name": "check with an invalid account id",
+      "op": "check_link",
+      "rules": ["LNK-10","ID-3"]
+    },
+    {
+      "error": "bad_link",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "link": {
+          "name": "localhost",
+          "service": "web"
+        },
+        "responses": [
+          {
+            "text": "rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0"
+          }
+        ]
+      },
+      "name": "check of an invalid link",
+      "op": "check_link",
+      "rules": ["LNK-2"]
+    },
+    {
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "Alice",
+          "service": "test",
+          "uid": "77"
+        },
+        "responses": [
+          {
+            "text": "{\"id\":\"77\",\"name\":\"Alice\",\"tag\":\"id-77\",\"links\":[{\"text\":\"x\"},{\"text\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"}]}"
+          }
+        ]
+      },
+      "name": "token in an array element",
+      "op": "check_link",
+      "output": true,
+      "rules": ["LNK-10"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "Alice",
+          "service": "test",
+          "uid": "77"
+        },
+        "responses": [
+          {
+            "text": "{\"id\":\"77\",\"name\":\"alice\",\"tag\":\"id-77\",\"links\":[{\"text\":\"x\"},{\"text\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"}]}"
+          }
+        ]
+      },
+      "name": "exact names differ in case",
+      "op": "check_link",
+      "rules": ["LNK-2","LNK-18"]
+    },
+    {
+      "error": "wrong_owner",
+      "input": {
+        "account": "52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0",
+        "descriptors": [
+          {
+            "checks": {
+              "*": [
+                {
+                  "equal": {
+                    "/id": "{uid}",
+                    "/name": "{name}",
+                    "/tag": "id-{uid}"
+                  },
+                  "kind": "http-json",
+                  "token_in": ["/about","/links/*/text"],
+                  "url": "https://example.org/u/{name}/{uid}"
+                }
+              ]
+            },
+            "display": "https://example.org/u/{name}",
+            "fields": {
+              "name": {
+                "chars": "!-~",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              },
+              "uid": {
+                "chars": "0-9A-Za-z.:_-",
+                "max": 64,
+                "min": 1,
+                "type": "token"
+              }
+            },
+            "rev": 1,
+            "service": "test",
+            "status": "active",
+            "v": 1
+          }
+        ],
+        "link": {
+          "name": "Alice",
+          "service": "test",
+          "uid": "77"
+        },
+        "responses": [
+          {
+            "text": "{\"id\":\"77\",\"name\":\"Alice\",\"tag\":\"id-78\",\"links\":[{\"text\":\"x\"},{\"text\":\"rootcard:52WWGVFV9RWKHKHN9T45S1C9RRVX8MRCRWY292PGG6F4HKQYE1B0\"}]}"
+          }
+        ]
+      },
+      "name": "a filled template differs",
+      "op": "check_link",
+      "rules": ["LNK-18"]
+    }
+  ]
+}

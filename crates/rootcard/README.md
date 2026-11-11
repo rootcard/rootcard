@@ -3,7 +3,8 @@
 The core of [rootcard](https://github.com/rootcard/rootcard): a portable, self-certifying identity for online logins. This
 crate holds the formats of `spec/SPEC.md` and everything that verifies them: canonical JSON, keys, the recovery key,
 inceptions and account ids, handles, the identity log (`verify_log`, `extend_log`, `compare_logs`), vault checks, public
-profiles, login, fetch and change messages, proofs, account files and recovery cards.
+profiles, login, fetch and change messages, proofs, account files and recovery cards, and linked accounts
+(`links::parse_links`, `link_requests`, `check_link`; the caller fetches).
 
 > **New to rootcard?** Start with the [project README](https://github.com/rootcard/rootcard#readme): what rootcard is,
 > the two ways to use it (a safer username-and-password login for your own service, or an ID card across services),

@@ -11,6 +11,7 @@ use rootcard::file::{card_text, export_account, import_account, read_card};
 use rootcard::id;
 use rootcard::json::{Map, Value, canonical, parse_json};
 use rootcard::keys::{KeyType, format_key, parse_key};
+use rootcard::links::{self, Descriptor, Link, LinkResponse};
 use rootcard::log::{
     Home, LogState, VerifyOptions, Version, add_receipt, compare_logs, extend_log, verify_log, verify_pending,
 };
@@ -98,6 +99,21 @@ impl Input<'_> {
             p: 1,
         })
     }
+    fn text(&self) -> R<Vec<u8>> {
+        text_of(self)
+    }
+    /// The descriptors of `descriptors`, or the bundled registry.
+    fn registry(&self) -> R<Result<Vec<Descriptor>, Error>> {
+        match self.opt("descriptors") {
+            None => Ok(Ok(links::registry())),
+            Some(v) => Ok(v
+                .as_array()
+                .ok_or("vector input: descriptors")?
+                .iter()
+                .map(links::parse_descriptor)
+                .collect()),
+        }
+    }
     fn home(&self) -> R<Home> {
         let h = Input(self.obj("home")?);
         Ok(Home {
@@ -105,6 +121,52 @@ impl Input<'_> {
             url: h.str("url")?.to_string(),
         })
     }
+}
+
+/// A text input: `text` (UTF-8) or `hex`, after `pad` spaces.
+fn text_of(m: &Input<'_>) -> R<Vec<u8>> {
+    let pad = match m.opt("pad") {
+        None => 0,
+        Some(p) => p
+            .as_int()
+            .filter(|p| (0..=1 << 20).contains(p))
+            .ok_or("vector input: pad")?,
+    };
+    let mut b = vec![b' '; pad as usize];
+    if m.opt("hex").is_some() {
+        b.extend(m.hex("hex")?);
+    } else {
+        b.extend(m.str("text")?.as_bytes());
+    }
+    Ok(b)
+}
+
+/// A recorded answer: `{ failed: true }`, `{ text | hex, pad? }` (a body) or `{ txt: [[string, ...], ...] }`.
+fn response(v: &Value) -> R<LinkResponse> {
+    let m = Input(v.as_object().ok_or("vector input: response")?);
+    if m.opt("failed").is_some() {
+        return Ok(LinkResponse::Failed);
+    }
+    if let Some(t) = m.opt("txt") {
+        let records = t
+            .as_array()
+            .ok_or("vector input: txt")?
+            .iter()
+            .map(|r| {
+                r.as_array()
+                    .ok_or("vector input: txt record")?
+                    .iter()
+                    .map(|s| {
+                        s.as_str()
+                            .map(|s| s.as_bytes().to_vec())
+                            .ok_or("vector input: txt string")
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        return Ok(LinkResponse::Txt(records));
+    }
+    Ok(LinkResponse::Body(text_of(&m)?))
 }
 
 fn hex(b: &[u8]) -> Value {
@@ -503,6 +565,71 @@ pub fn run(op: &str, input: &Map) -> R<Outcome> {
                 .into()
         }
         "card_text" => tryr!(card_text(i.get("card")?)).into(),
+        "parse_response_json" => match tryr!(rootcard::json::parse_response_json(&i.hex("text")?)) {
+            Some(v) => Map::new().with("value", v).into(),
+            None => Map::new().into(),
+        },
+        "link_token" => tryr!(links::link_token(i.str("account")?)).into(),
+        "find_link_token" => tryr!(links::find_link_token(&i.text()?, i.str("account")?)).into(),
+        "parse_descriptor" => {
+            let d = tryr!(links::parse_descriptor(i.get("descriptor")?));
+            Map::new()
+                .with("service", d.service.as_str())
+                .with("rev", d.rev)
+                .with("retired", d.retired)
+                .into()
+        }
+        "parse_links" => {
+            let reg = tryr!(i.registry()?);
+            let entries = tryr!(links::parse_links(i.obj("data")?, &reg));
+            Value::Array(
+                entries
+                    .iter()
+                    .map(|e| {
+                        let mut m = Map::new().with("status", e.status.map_or_else(|e| e.code(), |()| "ok"));
+                        if let Some(l) = &e.link {
+                            m.insert("link", l.to_value());
+                        }
+                        m.into()
+                    })
+                    .collect(),
+            )
+        }
+        "links_value" => {
+            let reg = tryr!(i.registry()?);
+            let list = i
+                .arr("links")?
+                .iter()
+                .map(Link::from_value)
+                .collect::<Result<Vec<_>, _>>();
+            tryr!(links::links_value(&tryr!(list), &reg))
+        }
+        "link_requests" | "link_display" | "check_link" => {
+            let reg = tryr!(i.registry()?);
+            let link = tryr!(Link::from_value(i.get("link")?));
+            let service = i
+                .opt("service")
+                .and_then(Value::as_str)
+                .unwrap_or(&link.service)
+                .to_string();
+            let Some(d) = links::find_descriptor(&reg, &service) else {
+                return Ok(Outcome::Err(Error::Unsupported));
+            };
+            match op {
+                "link_requests" => Value::Array(
+                    tryr!(links::link_requests(&link, d))
+                        .iter()
+                        .map(links::LinkRequest::to_value)
+                        .collect(),
+                ),
+                "link_display" => tryr!(links::link_display(&link, d)).into(),
+                _ => {
+                    let responses = i.arr("responses")?.iter().map(response).collect::<R<Vec<_>>>()?;
+                    tryr!(links::check_link(&link, i.str("account")?, d, &responses));
+                    true.into()
+                }
+            }
+        }
         _ => return Err(format!("unknown operation {op}")),
     };
     Ok(Outcome::Ok(out))

@@ -360,6 +360,21 @@ logs the same way.
   `rootcard-host`, used by `--host` and `--from` in the key tool and by the host fields of `keytool.html`
   (THREAT_MODEL.md T46). Cross-origin pointers (a domain that delegates to another host) are not allowed; they would
   need the client to show the target before registering
+- [x] Linked accounts, adopted from [proposals/links.md](proposals/links.md) into SPEC §12.3 ([LNK-1]–[LNK-14],
+  [LNK-17]–[LNK-19], [LNK-21], [LNK-22]; [LNK-15], [LNK-16] and [LNK-20] are not assigned). No format change and no
+  label: links are the profile key `user.links`. Both cores: `parse_links`, `links_value`, `link_token`,
+  `find_link_token`, `parse_descriptor`, `registry`, `find_descriptor`, `link_requests`, `link_display`, `check_link`
+  and the answer reader `parse_response_json` (a lenient mode of the canonical parser), with the codes `bad_link`,
+  `unsupported`, `wrong_owner`, `token_missing` and `fetch_failed`. The registry `spec/links/` (`github`, `dns`,
+  `web`) is checked by the core's descriptor parser and generated into both cores by `xtask vectors`. Vectors in
+  `spec/vectors/link.json`, nine operations in the differential test, the fuzz target `links`, THREAT_MODEL.md T47–T58
+  and AR14–AR17. Decided while adopting it, beyond the proposal: a value in a URL path fills a whole segment and is
+  never `.` or `..`, because browsers treat `%2e%2e` as a dot segment (T50); a `domain` is never an IP address or a
+  single label, and a server-side verifier connects only to public addresses (SSRF, T51); descriptors have a `v`; a
+  JSON answer's `null` and non-integer numbers are dropped, duplicates rejected (T58); answers of the wrong kind or
+  number are `bad_field`; the token is searched in bytes. [LNK-11] (who checked, and when) and [LNK-14] (stored fields
+  keep their meaning) bind verifiers' displays and the registry's review and have no test here. The key tool commands
+  are still open (Later)
 - [ ] HTTP binding: freeze `/v0` as `/v1` for `1.0.0` (HOST_PROTOCOL.md §1.3) and decide how long hosts keep serving
   `/v0`
 - [ ] Decide which "Later" items, if any, are in `1.0.0` (the sign-in flow of docs/proposals/signin.md adds a label and
@@ -373,9 +388,10 @@ publishing part was first met by `0.1.0` and has held for every release since.
 - Passkeys (WebAuthn PRF) as a lock type
 - Sign-in at other services (relying parties): the flow, the `rootcard/signin/v1` label and `rootcard signin` in the key
   tool, from [proposals/signin.md](proposals/signin.md); an agent for other command line programs after that
-- Linked accounts, from [proposals/links.md](proposals/links.md). Decided there (§12): the profile key `user.links`, a
-  service-neutral spec with a registry of declarative descriptors in `spec/links/` (`github`, `dns`, `web` first),
-  no root-signed link list, and no e-mail, which cannot be proved publicly
+- Linked accounts in the key tool and pages: `rootcard link add|remove|check` (needs a session at the home to publish
+  the profile, and a DNS TXT resolver, which is a new dependency or a DNS-over-HTTPS resolver to choose), a links panel
+  in `keytool.html`, and optionally identity pages in `rootcard-host` that check links server side under [LNK-9]. More
+  services as descriptors only (GitLab, Codeberg, Bluesky; Mastodon needs a new field type, proposals/links.md §5.5)
 - Standard profile keys (a display name, a small avatar image) with display rules: raster images only, never SVG or
   URLs to load (SPEC [DAT-8] needs a clarification for images)
 - An additional host secret (OPAQUE or a pepper) as a lock layer against offline guessing (THREAT_MODEL.md AR1), and a

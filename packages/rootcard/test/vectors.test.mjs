@@ -39,7 +39,7 @@ import { ops, setSha256Sync } from "./ops.mjs";
 setSha256Sync((m) => new Uint8Array(createHash("sha256").update(m).digest()));
 import { canonicalString, RootcardError } from "../src/index.js";
 
-for (const file of ["primitives.json", "log.json", "vault.json", "profile.json", "proof.json", "file.json"]) {
+for (const file of ["primitives.json", "log.json", "vault.json", "profile.json", "proof.json", "file.json", "link.json"]) {
   const { vectors: list } = vectors(file);
   for (const v of list) {
     test(`${file}: ${v.name} [${v.rules.join(", ")}]`, async () => {

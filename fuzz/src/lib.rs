@@ -13,13 +13,14 @@ use std::sync::OnceLock;
 use zeroize::Zeroizing;
 
 /// The shared vector files, compiled in so a target needs no files at run time.
-pub const VECTOR_FILES: [(&str, &str); 6] = [
+pub const VECTOR_FILES: [(&str, &str); 7] = [
     ("primitives", include_str!("../../spec/vectors/primitives.json")),
     ("log", include_str!("../../spec/vectors/log.json")),
     ("file", include_str!("../../spec/vectors/file.json")),
     ("profile", include_str!("../../spec/vectors/profile.json")),
     ("proof", include_str!("../../spec/vectors/proof.json")),
     ("vault", include_str!("../../spec/vectors/vault.json")),
+    ("link", include_str!("../../spec/vectors/link.json")),
 ];
 
 /// One shared vector: its operation, input and whether it expects an error.

@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "service": "dns",
+  "rev": 1,
+  "status": "active",
+  "fields": {
+    "name": { "type": "domain" }
+  },
+  "display": "https://{name}/",
+  "checks": {
+    "*": [
+      { "kind": "dns-txt", "name": "_rootcard.{name}" }
+    ]
+  }
+}

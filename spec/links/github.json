@@ -1,0 +1,27 @@
+{
+  "v": 1,
+  "service": "github",
+  "rev": 1,
+  "status": "active",
+  "fields": {
+    "name": { "type": "token", "chars": "A-Za-z0-9-", "min": 1, "max": 39, "compare": "ascii-ci" },
+    "uid": { "type": "token", "chars": "0-9", "min": 1, "max": 20 },
+    "ref": {
+      "bio": { "type": "none" },
+      "gist": { "type": "token", "chars": "0-9a-f", "min": 1, "max": 64 }
+    }
+  },
+  "display": "https://github.com/{name}",
+  "checks": {
+    "bio": [
+      { "kind": "http-json", "url": "https://api.github.com/user/{uid}",
+        "equal": { "/id": "{uid}", "/login": "{name}" }, "token_in": ["/bio"] }
+    ],
+    "gist": [
+      { "kind": "http-json", "url": "https://api.github.com/user/{uid}",
+        "equal": { "/id": "{uid}", "/login": "{name}" } },
+      { "kind": "http-json", "url": "https://api.github.com/gists/{ref}",
+        "equal": { "/owner/id": "{uid}" }, "token_in": ["/files/*/content"] }
+    ]
+  }
+}

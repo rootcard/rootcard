@@ -204,9 +204,18 @@ the shared vectors ([CNV-4]).
 | Messages | `login_message`, `fetch_message`, `change_message`, `receipt_message` and their verification | Ed25519 | always |
 | Proofs | `prove`, `verify_proof`, `statement_challenge` | Ed25519 | always |
 | Public data | `verify_public`, `PublicProfile::set` (namespace-checked) | Ed25519 | always |
+| Linked accounts | `parse_links`, `links_value`, `link_token`, `find_link_token`, `parse_descriptor`, `registry`, `link_requests`, `link_display`, `check_link`, `parse_response_json` | – | always |
 | Vault checks | `verify_vault` (signatures, locks, limits; no decryption) | Ed25519 | always |
 | Vault crypto | `Vault::create`, `unlock`, `change_password`, `add_slot`, `new_instance`, contents | X25519, HKDF, AES-GCM, Argon2id, NFC | `vault` |
 | Files | `AccountFile::export` / `import`, `RecoveryCard` | as above | always (vault parts with `vault`) |
+
+**Linked accounts** (SPEC §12.3) are checked without I/O in the core, too: `link_requests` names the HTTPS requests or
+DNS queries, the caller performs them under [LNK-9] (no redirects, 64 KiB, 10 s, and on a server only public addresses)
+and passes the answers to `check_link`. Services are data: one descriptor per service in `spec/links/`, interpreted by
+the same small interpreter in both cores. `xtask vectors` checks every descriptor with the core's own parser and
+generates their canonical form into `crates/rootcard/src/links_registry.rs` and `packages/rootcard/src/links-registry.js`,
+so the registry is bundled with the code ([LNK-19]) and the two copies cannot drift from `spec/links/`. Fetching belongs
+to the application, a host's identity page or the key tool; neither core nor `rootcard-host` fetches anything.
 
 Hosts and relying parties use the core **without** the `vault` feature (Rust: `default-features = false`), which removes
 Argon2id, X25519, AES-GCM and Unicode normalization from their build. Clients and the key tool use the default features.
@@ -242,7 +251,8 @@ None of the core's dependencies is built with its `getrandom` or `rand_core` fea
 Canonical JSON,
 base64url and base32 are implemented in the cores themselves: they are small, they must be strict in ways general
 libraries are not (duplicate members, number forms, canonical padding), and they are covered by reject vectors. No
-`serde_json` in the core.
+`serde_json` in the core. The reader of linked services' JSON answers (`parse_response_json`, [LNK-9]) is a lenient
+mode of the same parser, so linked accounts add no dependency.
 
 ---
 
@@ -255,13 +265,14 @@ libraries are not (duplicate members, number forms, canonical padding), and they
 | [docs/DESIGN.md](DESIGN.md) | Motivation | Requirements and the original design (superseded where SPEC differs) |
 | [spec/SPEC.md](../spec/SPEC.md) | **Normative** | The format and the rules for every party |
 | [spec/vectors/](../spec/vectors/) | **Normative** | Shared test vectors |
+| [spec/links/](../spec/links/) | Registry | One descriptor per linked service (`github`, `dns`, `web`), bundled with both cores |
 | [docs/GETTING_STARTED.md](GETTING_STARTED.md) | Guide | Code for each role: application client, host, relying party |
 | [docs/CONCEPTS.md](CONCEPTS.md) | Guide | The log, vault, recovery card, proofs and verification, citing SPEC rules |
 | [docs/THREAT_MODEL.md](THREAT_MODEL.md) | Security | Goals, attackers, threats, accepted risks |
 | [docs/HOST_PROTOCOL.md](HOST_PROTOCOL.md) | Binding | Recommended HTTP endpoints for hosts |
 | docs/ARCHITECTURE.md | Overview | This document: components, server usage, dependencies |
 | [docs/RELEASING.md](RELEASING.md) | Process | Preparing, publishing and reproducing releases |
-| [docs/proposals/](proposals/) | Drafts | Proposals that are not normative yet (sign-in at other services, linked accounts) |
+| [docs/proposals/](proposals/) | Drafts | Proposals: sign-in at other services (draft), linked accounts (adopted in SPEC §12.3) |
 | [fuzz/README.md](../fuzz/README.md) | Process | The fuzz targets and how to run them |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Rules | AGENTS.md's rules for people, the checks, pull requests |
 | [SECURITY.md](../SECURITY.md) | Policy | Reporting vulnerabilities, supported versions |

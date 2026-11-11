@@ -4,6 +4,17 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- Linked accounts (SPEC §12.3): the new module `links` with `parse_links`, `links_value`, `link_token`,
+  `find_link_token`, `parse_descriptor`, `registry` (the descriptors of `spec/links/`, bundled), `find_descriptor`,
+  `link_requests`, `link_display`, `check_link`, `is_domain`, and the types `Link`, `LinkEntry`, `Descriptor`,
+  `LinkRequest`, `RequestKind` and `LinkResponse`. The module does no I/O: the caller fetches what `link_requests`
+  names under [LNK-9]. No format change: links are the profile key `user.links`.
+- `json::parse_response_json` reads JSON from outside rootcard (a linked service's answer): `null` and non-integer
+  numbers are dropped, everything else is as strict as `parse_json`.
+- Five error codes: `bad_link`, `unsupported`, `wrong_owner`, `token_missing` and `fetch_failed` (`Error` is
+  `#[non_exhaustive]`).
+- Shared vectors in `spec/vectors/link.json`.
+
 ## 0.3.3 - 2026-11-11
 
 - The crate documentation starts with a compiled tour (registration, a receipt, unlocking the vault, a proof) and points

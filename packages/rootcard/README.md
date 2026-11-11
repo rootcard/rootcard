@@ -19,7 +19,7 @@ const state = await verifyLog(events, { realms: ["global"], now: Math.floor(Date
 
 - `rootcard` is the verification core: canonical JSON, keys, recovery keys, identities and handles, logs
   (`verifyLog`, `extendLog`, `compareLogs`), vault and profile checks, login and fetch messages, proofs, account files
-  and recovery cards.
+  and recovery cards, and linked accounts (`parseLinks`, `linkRequests`, `checkLink`; the caller fetches).
 - `rootcard/vault` adds password locks (Argon2id implemented in this package, the only primitive not taken from
   WebCrypto), vault encryption and the high-level flows: registration, password change, new instances and rotation.
   A server bundle that does not import it never loads it.

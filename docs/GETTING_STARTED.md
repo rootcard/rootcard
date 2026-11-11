@@ -256,6 +256,51 @@ The user's side is `prove(state, "account", accountSeed, challenge, recipient)` 
 with the recovery key. An application that runs its own host does not need proofs for its own users: the login already
 is the answer.
 
+### 4.1 Linked accounts
+
+A user's verified public profile may list accounts elsewhere in `user.links` (SPEC §12.3, CONCEPTS.md §6). The core
+says what to fetch and decides from the answers; you do the fetching, under the rules of [LNK-9]:
+
+```js
+import * as rc from "rootcard";
+import { promises as dns } from "node:dns"; // in a browser: TXT records from a DNS-over-HTTPS resolver you trust
+
+// Fetch under [LNK-9]: HTTPS, no redirects, no credentials, at most 64 KiB, 10 s. Any failure is null.
+// A server must also refuse addresses that are not public (loopback, private, link-local), after resolution.
+async function answer(req) {
+  try {
+    if (req.kind === "dns-txt") return { txt: await dns.resolveTxt(req.name) };
+    const res = await fetch(req.url, { redirect: "error", credentials: "omit", signal: AbortSignal.timeout(10_000) });
+    if (res.status !== 200) return null;
+    const body = new Uint8Array(await res.arrayBuffer());
+    return body.length > rc.RESPONSE_LIMIT ? null : { body };
+  } catch {
+    return null;
+  }
+}
+
+const registry = rc.registry();
+const { data } = await rc.verifyPublic(profile, state); // the newest profile of the current instance ([LNK-3])
+for (const { link, status } of rc.parseLinks(data, registry)) {
+  if (status !== "ok") { show(link, status); continue; } // "unsupported" or "bad_link" ([LNK-12])
+  const d = rc.findDescriptor(registry, link.service);
+  const answers = await Promise.all(rc.linkRequests(link, d).map(answer));
+  let result = "verified";
+  try {
+    rc.checkLink(link, state.account, d, answers);
+  } catch (e) {
+    result = e.code; // wrong_owner, token_missing, fetch_failed
+  }
+  show(link, result, rc.linkDisplay(link, d), new Date()); // shown as text or a link, never fetched
+}
+```
+
+The same functions are in Rust (`rootcard::links`), with the answers as `LinkResponse::Failed`, `Body(bytes)` or
+`Txt(records)`. GitHub's API wants a `User-Agent` header from programs that are not browsers, and answers anonymous
+callers within a rate limit, which shows as `fetch_failed`. To add a link, a client shows the user the token
+(`linkToken(account)`) and where to put it, checks the link as above with the new link in place, and publishes the
+profile with `setData(data, app, "user.links", linksValue(links, registry))`.
+
 ## 5. Recovery and the key tool
 
 Applications never handle the recovery key ([PWR-6]), so they never offer recovery themselves. Point users to the key

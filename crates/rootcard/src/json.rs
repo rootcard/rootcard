@@ -277,10 +277,27 @@ pub fn parse_json(bytes: &[u8]) -> Result<Value> {
     if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
         return Err(Error::BadJson);
     }
+    parse_with(bytes, false)?.ok_or(Error::BadJson)
+}
+
+/// Parse a JSON text from outside rootcard, such as a linked service's answer (SPEC [LNK-9]): any RFC 8259 text that
+/// is well-formed UTF-8 without a byte order mark, with unique member names, no lone surrogate escapes and at most 32
+/// levels of nesting. `null` and numbers that are not safe integers in the form `0|-?[1-9][0-9]*` are dropped: an
+/// object member with such a value is left out, as is an array element. The result is `None` if the whole text is such
+/// a value. → `bad_json`
+pub fn parse_response_json(bytes: &[u8]) -> Result<Option<Value>> {
+    if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        return Err(Error::BadJson);
+    }
+    parse_with(bytes, true)
+}
+
+fn parse_with(bytes: &[u8], lenient: bool) -> Result<Option<Value>> {
     let text = core::str::from_utf8(bytes).map_err(|_| Error::BadJson)?;
     let mut p = Parser {
         s: text.as_bytes(),
         i: 0,
+        lenient,
     };
     p.ws();
     let v = p.value(1)?;
@@ -307,6 +324,8 @@ pub fn parse_limited(bytes: &[u8], limit: usize) -> Result<Value> {
 struct Parser<'a> {
     s: &'a [u8],
     i: usize,
+    /// [`parse_response_json`]: `null` and other numbers are accepted and dropped (`None`).
+    lenient: bool,
 }
 
 impl Parser<'_> {
@@ -321,7 +340,7 @@ impl Parser<'_> {
     }
 
     fn eat(&mut self, lit: &[u8]) -> Result<()> {
-        if self.s[self.i..].starts_with(lit) {
+        if self.s.get(self.i..).is_some_and(|r| r.starts_with(lit)) {
             self.i += lit.len();
             Ok(())
         } else {
@@ -329,7 +348,8 @@ impl Parser<'_> {
         }
     }
 
-    fn value(&mut self, depth: usize) -> Result<Value> {
+    /// A value; `None` only in lenient mode, for a dropped value.
+    fn value(&mut self, depth: usize) -> Result<Option<Value>> {
         match self.peek().ok_or(Error::BadJson)? {
             b'{' => {
                 if depth > MAX_DEPTH {
@@ -337,10 +357,11 @@ impl Parser<'_> {
                 }
                 self.i += 1;
                 let mut m = Map::new();
+                let mut dropped: Vec<String> = Vec::new();
                 self.ws();
                 if self.peek() == Some(b'}') {
                     self.i += 1;
-                    return Ok(Value::Object(m));
+                    return Ok(Some(Value::Object(m)));
                 }
                 loop {
                     self.ws();
@@ -352,15 +373,21 @@ impl Parser<'_> {
                     self.eat(b":")?;
                     self.ws();
                     let v = self.value(depth + 1)?;
-                    if m.insert(k, v).is_some() {
+                    if m.get(&k).is_some() || dropped.contains(&k) {
                         return Err(Error::BadJson);
+                    }
+                    match v {
+                        Some(v) => {
+                            m.insert(k, v);
+                        }
+                        None => dropped.push(k),
                     }
                     self.ws();
                     match self.peek() {
                         Some(b',') => self.i += 1,
                         Some(b'}') => {
                             self.i += 1;
-                            return Ok(Value::Object(m));
+                            return Ok(Some(Value::Object(m)));
                         }
                         _ => return Err(Error::BadJson),
                     }
@@ -375,31 +402,34 @@ impl Parser<'_> {
                 self.ws();
                 if self.peek() == Some(b']') {
                     self.i += 1;
-                    return Ok(Value::Array(a));
+                    return Ok(Some(Value::Array(a)));
                 }
                 loop {
                     self.ws();
-                    a.push(self.value(depth + 1)?);
+                    if let Some(v) = self.value(depth + 1)? {
+                        a.push(v);
+                    }
                     self.ws();
                     match self.peek() {
                         Some(b',') => self.i += 1,
                         Some(b']') => {
                             self.i += 1;
-                            return Ok(Value::Array(a));
+                            return Ok(Some(Value::Array(a)));
                         }
                         _ => return Err(Error::BadJson),
                     }
                 }
             }
-            b'"' => Ok(Value::String(self.string()?)),
-            b't' => self.eat(b"true").map(|_| Value::Bool(true)),
-            b'f' => self.eat(b"false").map(|_| Value::Bool(false)),
+            b'"' => Ok(Some(Value::String(self.string()?))),
+            b't' => self.eat(b"true").map(|_| Some(Value::Bool(true))),
+            b'f' => self.eat(b"false").map(|_| Some(Value::Bool(false))),
+            b'n' if self.lenient => self.eat(b"null").map(|_| None),
             b'-' | b'0'..=b'9' => self.number(),
             _ => Err(Error::BadJson),
         }
     }
 
-    fn number(&mut self) -> Result<Value> {
+    fn number(&mut self) -> Result<Option<Value>> {
         let start = self.i;
         let neg = self.peek() == Some(b'-');
         if neg {
@@ -414,18 +444,47 @@ impl Parser<'_> {
             }
             _ => return Err(Error::BadJson),
         }
+        let int_end = self.i;
         if matches!(self.peek(), Some(b'.' | b'e' | b'E')) {
+            if !self.lenient {
+                return Err(Error::BadJson);
+            }
+            // RFC 8259 fraction and exponent; the number is dropped.
+            if self.peek() == Some(b'.') {
+                self.i += 1;
+                self.digits()?;
+            }
+            if matches!(self.peek(), Some(b'e' | b'E')) {
+                self.i += 1;
+                if matches!(self.peek(), Some(b'+' | b'-')) {
+                    self.i += 1;
+                }
+                self.digits()?;
+            }
+            return Ok(None);
+        }
+        let text = core::str::from_utf8(&self.s[start..int_end]).map_err(|_| Error::BadJson)?;
+        let n = if text == "-0" || text.len() > 17 {
+            None
+        } else {
+            text.parse::<i64>().ok().filter(|n| (-MAX_SAFE..=MAX_SAFE).contains(n))
+        };
+        match n {
+            Some(n) => Ok(Some(Value::Int(n))),
+            None if self.lenient => Ok(None),
+            None => Err(Error::BadJson),
+        }
+    }
+
+    /// One or more decimal digits.
+    fn digits(&mut self) -> Result<()> {
+        if !matches!(self.peek(), Some(b'0'..=b'9')) {
             return Err(Error::BadJson);
         }
-        let text = core::str::from_utf8(&self.s[start..self.i]).map_err(|_| Error::BadJson)?;
-        if text == "-0" || text.len() > 17 {
-            return Err(Error::BadJson);
+        while matches!(self.peek(), Some(b'0'..=b'9')) {
+            self.i += 1;
         }
-        let n: i64 = text.parse().map_err(|_| Error::BadJson)?;
-        if !(-MAX_SAFE..=MAX_SAFE).contains(&n) {
-            return Err(Error::BadJson);
-        }
-        Ok(Value::Int(n))
+        Ok(())
     }
 
     fn hex4(&mut self) -> Result<u32> {
@@ -548,5 +607,35 @@ mod tests {
         assert!(parse_json(deep.as_bytes()).is_ok());
         let deeper = "[".repeat(33) + &"]".repeat(33);
         assert_eq!(parse_json(deeper.as_bytes()), Err(Error::BadJson));
+    }
+
+    #[test]
+    fn response_json() {
+        let r =
+            |s: &str| parse_response_json(s.as_bytes()).map(|v| v.map(|v| String::from_utf8(canonical(&v)).unwrap()));
+        assert_eq!(
+            r(r#"{"a":null,"b":[1,null,2.5,-0,1e3,9007199254740992,3],"c":"x"}"#),
+            Ok(Some(r#"{"b":[1,3],"c":"x"}"#.into()))
+        );
+        assert_eq!(r("null"), Ok(None));
+        assert_eq!(r(" 1.5e-3 "), Ok(None));
+        for bad in [
+            "{\"a\":null,\"a\":1}",
+            "{\"a\":1,\"a\":null}",
+            "nul",
+            "1.",
+            "1e",
+            "1e+",
+            ".5",
+            "01",
+            "\"\\ud800\"",
+            "\u{feff}{}",
+            "[1,]",
+        ] {
+            assert_eq!(parse_response_json(bad.as_bytes()), Err(Error::BadJson), "{bad:?}");
+        }
+        assert_eq!(parse_json(b"null"), Err(Error::BadJson));
+        let deeper = "[".repeat(33) + &"]".repeat(33);
+        assert_eq!(parse_response_json(deeper.as_bytes()), Err(Error::BadJson));
     }
 }

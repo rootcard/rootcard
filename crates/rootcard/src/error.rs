@@ -79,6 +79,11 @@ codes! {
     UnlockFailed => "unlock_failed",
     WrongAccountKey => "wrong_account_key",
     BadDataKey => "bad_data_key",
+    BadLink => "bad_link",
+    Unsupported => "unsupported",
+    WrongOwner => "wrong_owner",
+    TokenMissing => "token_missing",
+    FetchFailed => "fetch_failed",
     WrongChallenge => "wrong_challenge",
     WrongRecipient => "wrong_recipient",
     ChallengeUnknown => "challenge_unknown",
@@ -112,6 +117,6 @@ mod tests {
             assert_eq!(Error::from_code(e.code()), Some(*e));
             assert!(!Error::ALL[i + 1..].iter().any(|o| o.code() == e.code()));
         }
-        assert_eq!(Error::ALL.len(), 52);
+        assert_eq!(Error::ALL.len(), 57);
     }
 }

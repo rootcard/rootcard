@@ -21,6 +21,7 @@ Rule identifiers (`[LOG-12]`) refer to [spec/SPEC.md](../spec/SPEC.md). Design b
 | G11 | **Operable hosts.** A host can run on many servers, rotate its key, change its address and retry requests without weakening G1–G7 |
 | G9 | **Unlinkability across identities.** Two identities made from one recovery key are not linkable by their public data ([RK-4]) |
 | G10 | **Application neutrality.** No application can use rootcard data to act in another application's namespace or realm |
+| G12 | **Two-sided links.** A link to an external account is shown as verified only if the identity's current profile names the account and the account names the identity, both checked by the viewer itself (SPEC §12.3) |
 
 Non-goals: anonymity towards the primary host (it sees logins and network addresses), hiding that an identity exists
 (handles and logs are public by design), availability against a host that refuses service (the owner can move, G8), and
@@ -62,6 +63,7 @@ protection of a device that the attacker controls while the user unlocks on it.
 | X10 | **Malicious application** in the same realm or another | Its own client code, its own namespace, the user's trust in it |
 | X11 | **Supply-chain attacker** | Tries to ship modified packages or a modified key tool page |
 | X12 | **Quantum adversary** (future) | Breaks Ed25519 and X25519 given public keys |
+| X13 | **Linked service or domain** (or whoever controls its answers: its operator, a taken-over account, a new domain owner, a DNS resolver) | Answers a verifier's link checks with anything, slowly, hugely or with redirects |
 
 Not in scope: an attacker who controls the user's device or browser while the user enters the password or recovery key,
 and side channels on the user's device beyond constant-time comparisons ([IMP-4]).
@@ -161,6 +163,18 @@ and side channels on the user's device beyond constant-time comparisons ([IMP-4]
 | T44 | A weak password is set after registration (a change, an added slot, a reset), where no host can check it | owner, X10 | Every core function that creates a password lock enforces the password rules, not only registration (0.3.0) | LCK-8 | A modified client can skip the library (low power, own identity only) |
 | T45 | A browser's WebCrypto cannot use some keys: WebKit (Safari) rejects an Ed25519 seed or X25519 secret whose first byte is zero (about 1 key in 256), so registration, rotation or login fails at random and a password whose login key is such a seed never works there | platform | X25519 secrets are passed as the same scalar after clamping; new Ed25519 seeds (account seed, recovery key, password salt) are drawn again until usable; a JavaScript client signs with an older such seed by importing it with its public key on record (found by the WebKit browser job, fixed in 0.3.0) | CRY-2, CRY-9, IMP-6 | An identity made before 0.3.0 whose recovery signing seed starts with zero cannot be opened in Safari's key tool from the typed recovery key alone (the inception is recomputed before any key is on record); the card file, the CLI or another browser work |
 | T46 | A forged or hijacked host pointer (`/.well-known/rootcard`) sends a user who typed a domain to another host, or one that answers with a redirect or a huge body | X2, X4 | The pointer is resolved only for a typed origin, only to a base URL on that same origin (`wrong_host` otherwise), without redirects and with a 4 096-byte limit; it is never stored: `home.url` and signed messages carry the resolved base URL, and addresses from a verified log are not resolved | HST-23, LGN-4 | Whoever controls the origin's server controls its pointer, as it controls the host itself; an origin without a pointer is used as the base URL |
+| T47 | An identity claims an external account it does not control | X2 | The token must be at a location only the account's owner can write; missing → `token_missing` | LNK-6, LNK-7, LNK-10 | – |
+| T48 | An external account claims an identity by posting its token | X2, X13 | Verifiers start from the identity's signed, current profile and show only links listed there | LNK-3, LNK-10 | – |
+| T49 | A service name is renamed, deleted and registered again by someone else, who posts the token | X2, X13 | Descriptors of such services require the stable `uid` and every check compares both `uid` and `name` with the answer | LNK-18, LNK-22 | – |
+| T50 | Profile data steers a verifier's requests: another host, another path (`..`, `%2e%2e`), a query, a `javascript:` link | X2 | URLs come only from descriptor templates with literal hosts or `domain` fields; values are percent-encoded, fill whole path segments and are never `.` or `..`; no URL from profile data is fetched or displayed (the dot-segment case was found while adopting the proposal, before release) | LNK-8, LNK-12, LNK-21, LNK-22 | – |
+| T51 | A server-side verifier is made to reach internal addresses (SSRF) through a `domain` field (`intranet.example`, a name resolving to `10.0.0.1`) | X2 | `domain` names are never IP addresses and never single labels; a server-side verifier connects only to public addresses, checked after resolution; answers are only searched for the token | LNK-9, LNK-21 | A verifier that ignores [LNK-9] can be made to send `GET` requests without credentials to internal names |
+| T52 | A changed or injected descriptor makes false links verify | X11, X10 | Descriptors are bundled and reviewed like code, never loaded at run time; the format's rules bind every descriptor and are checked by the parser and by `xtask` | LNK-19, LNK-22 | A site that adds its own descriptors is trusted for them, and labels them as its own |
+| T53 | A service or domain answers with huge, slow, redirecting, deeply nested or active content | X13 | No redirects, 64 KiB, 10 s, the strict reader with a depth limit, text only searched, never rendered | LNK-9, DAT-8 | – |
+| T54 | A website, badge or host says "verified" without checking | X4, X10 | Viewers check themselves; others' results are labelled as theirs, with a time | LNK-11 | – |
+| T55 | The token is placed in a comment, issue or other field someone else can write | X2 | Only owner-writable locations are read: the descriptor names exact pointers (`/bio`, `/files/*/content`) | LNK-7, LNK-22 | – |
+| T56 | Look-alike names (`examp1e.org`, Unicode domains, `Alice` vs `alice`) | X2 | Domains in ASCII only, names shown as text; names are compared as the service compares them | LNK-12, LNK-21, LNK-2 | Viewers still compare names themselves (as AR7) |
+| T57 | An unknown service, form or version breaks old verifiers, or is shown as verified | – | Unknown is `unsupported`, never invalid and never verified | LNK-13 | – |
+| T58 | The JSON reader of answers differs between the cores, so one verifies what the other rejects | X13 | One strict-but-lenient reader per core (null and other numbers dropped, duplicates rejected), shared vectors, the differential test and the `links` fuzz target | LNK-9 | – |
 
 ---
 
@@ -228,6 +242,20 @@ and side channels on the user's device beyond constant-time comparisons ([IMP-4]
   resets instead.
 - **AR13: A lost recovery card cannot be replaced** in format version 1: rotation needs the old key. The account keeps
   working with its password, but can no longer be reset, moved or retired.
+- **AR14: A password thief edits links** (SPEC [LNK-4]). Adding a link to the thief's own account makes the identity
+  appear to be that account; removing links hides the owner's. Low power like every profile edit, ended by a reset with
+  the recovery card (AR12). Links signed by the recovery key would prevent it and are not planned.
+- **AR15: A link is as strong as the external account.** Its side is the service's word: a compromised GitHub account,
+  a dishonest service, or the new owner of an expired domain (`dns` and `web` have no stable id) controls it. A domain
+  that changes hands confirms a link that a stale profile still lists. *Advice:* remove links before letting a domain
+  expire.
+- **AR16: DNS answers without DNSSEC** can be forged by an attacker on the verifier's path or at its resolver, and a
+  browser verifier reads DNS through a DNS-over-HTTPS resolver it trusts. Verifiers show the resolver and whether
+  DNSSEC was validated.
+- **AR17: Stale profiles and link privacy.** A verifier that cannot reach the home may show a link from an older profile
+  the owner has since changed (DAT-9); the owner removes the token too, which ends the link for every check. Links are
+  public and link the identity to the external accounts; each check tells the service the viewer's address and that
+  someone looked. A user who does not want this uses another identity (G9).
 
 ---
 

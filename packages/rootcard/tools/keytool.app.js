@@ -3,7 +3,7 @@
 
 const rc = { ...__modules["index.js"] };
 for (const name of ["errors.js", "json.js", "encoding.js", "labels.js", "binding.js", "crypto.js", "keys.js", "recovery.js", "id.js", "log.js",
-  "vaultcheck.js", "profile.js", "messages.js", "proof.js", "file.js", "argon2.js", "vault.js", "account.js", "testing.js"]) {
+  "vaultcheck.js", "profile.js", "messages.js", "proof.js", "links.js", "file.js", "argon2.js", "vault.js", "account.js", "testing.js"]) {
   Object.assign(rc, __modules[name]);
 }
 const $ = (id) => document.getElementById(id);
