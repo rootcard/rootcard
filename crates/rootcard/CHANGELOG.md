@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.3 - 2026-11-11
+
 - The crate documentation starts with a compiled tour (registration, a receipt, unlocking the vault, a proof) and points
   to the new `docs/GETTING_STARTED.md`; the README adds the crate with `cargo add` instead of naming an old version.
 - `id::extended_tags` no longer panics on ids shorter than a tag or with characters of more than one byte, and

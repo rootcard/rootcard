@@ -4,6 +4,10 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.3 - 2026-11-11
+
+No changes.
+
 ## 0.3.2 - 2026-11-06
 
 - `--host` and `--from` accept a bare domain (`https://example.com`) and resolve it through the host pointer

@@ -2,7 +2,7 @@
 
 **A portable, self-certifying identity for online logins — an ID card you own.**
 
-> Status: **0.3.2, pre-1.0.** Published on crates.io and npm. The format (format version 1) is a draft and has not had
+> Status: **0.3.3, pre-1.0.** Published on crates.io and npm. The format (format version 1) is a draft and has not had
 > an external security review yet ([docs/PLAN.md](docs/PLAN.md), phase 6). Do not rely on it for high-value accounts
 > before `1.0.0`.
 
