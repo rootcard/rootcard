@@ -17,6 +17,7 @@ use rootcard::proof::{ProofBy, prove, statement_challenge};
 use rootcard::recovery::{RecoveryKeys, derive_recovery_keys};
 use rootcard::testing::TestRandom;
 use rootcard::vault::{Kdf, Secret, unlock_vault};
+use std::path::Path;
 
 /// One vector before its output is computed.
 pub struct V {
@@ -2519,6 +2520,1066 @@ fn file_vectors(s: &Scenario) -> Vec<V> {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+// link.json
+
+/// A JSON literal from the generator's own source.
+fn j(text: &str) -> Value {
+    rootcard::parse_json(text.as_bytes()).unwrap_or_else(|_| Value::from(format!("bad literal {text}")))
+}
+
+/// The bundled descriptor of `service`, as JSON.
+fn descriptor_json(service: &str) -> Value {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../spec/links/{service}.json"));
+    let text = std::fs::read(path).unwrap_or_default();
+    rootcard::parse_json(&text).unwrap_or_else(|_| Value::from("missing descriptor"))
+}
+
+/// `d` with the JSON pointer-like `path` (member names) set to `val`, or removed for `None`.
+fn edit(d: &Value, path: &[&str], val: Option<Value>) -> Value {
+    let mut m = obj(d);
+    match path {
+        [] => {}
+        [k] => {
+            match val {
+                Some(v) => m.insert(*k, v),
+                None => m.remove(k),
+            };
+        }
+        [k, rest @ ..] => {
+            let inner = m.get(k).cloned().unwrap_or_else(m_val);
+            m.insert(*k, edit(&inner, rest, val));
+        }
+    }
+    m.into()
+}
+
+fn m_val() -> Value {
+    Map::new().into()
+}
+
+fn link_vectors(s: &Scenario) -> Result<Vec<V>, String> {
+    let account = verify_log(&s.log1, &opts()).map_err(|e| e.to_string())?.account;
+    let other = rootcard::encoding::base32_encode(&[0x42; 32]);
+    let token = format!("rootcard:{account}");
+    let mut out = Vec::new();
+
+    // Answers from outside rootcard ([LNK-9]).
+    for (name, text) in [
+        (
+            "an answer with null, fractions and large numbers",
+            r#"{"login":"alice","id":583231,"bio":null,"score":1.5,"big":12345678901234567890,"e":1e3,"list":[null,1,-0,"x"]}"#,
+        ),
+        ("an answer that is null", "null"),
+        ("an answer with escapes", r#"{"bio":"A😀\/\n"}"#),
+        ("a duplicate member", r#"{"a":1,"a":2}"#),
+        (
+            "a duplicate member whose first value is dropped",
+            r#"{"a":null,"a":"x"}"#,
+        ),
+        ("a lone surrogate escape", r#"{"a":"\ud800"}"#),
+        ("a number without digits after the point", "[1.]"),
+        ("an exponent without digits", "[1e+]"),
+        ("a leading zero", "[01]"),
+        ("trailing text", "{} x"),
+        ("a byte order mark", "\u{feff}{}"),
+    ] {
+        out.push(v(
+            name,
+            &["LNK-9"],
+            "parse_response_json",
+            m().with("text", h(text.as_bytes())),
+        ));
+    }
+    let limit = "[".repeat(16) + "\t" + &"[".repeat(16) + &"]".repeat(32);
+    out.push(v(
+        "an answer nested 32 levels",
+        &["LNK-9", "CJ-5"],
+        "parse_response_json",
+        m().with("text", h(limit.as_bytes())),
+    ));
+    let deep = "[".repeat(33) + &"]".repeat(33);
+    out.push(v(
+        "an answer nested 33 levels",
+        &["LNK-9"],
+        "parse_response_json",
+        m().with("text", h(deep.as_bytes())),
+    ));
+    out.push(v(
+        "an answer that is not UTF-8",
+        &["LNK-9"],
+        "parse_response_json",
+        m().with("text", "22ff22"),
+    ));
+
+    // Tokens ([LNK-5], [LNK-6]).
+    out.push(v(
+        "the link token",
+        &["LNK-5"],
+        "link_token",
+        m().with("account", account.as_str()),
+    ));
+    out.push(v(
+        "the link token of a lower-case id",
+        &["LNK-5", "ID-3"],
+        "link_token",
+        m().with("account", account.to_lowercase()),
+    ));
+    let tl = token.len() as i64;
+    let lim = rootcard::links::TOKEN_SEARCH_LIMIT as i64;
+    for (name, text, pad) in [
+        ("token alone", token.clone(), 0),
+        ("token in a sentence", format!("My rootcard: {token}."), 0),
+        ("token in a URL", format!("https://example.org/?{token}&x"), 0),
+        ("token followed by an underscore", format!("{token}_"), 0),
+        ("token after a letter", format!("x{token}"), 0),
+        ("token followed by a digit", format!("{token}0"), 0),
+        ("token in lower case", token.to_lowercase(), 0),
+        ("token after a bad occurrence", format!("a{token} {token}"), 0),
+        ("tokens of two identities", format!("rootcard:{other} {token}"), 0),
+        ("the token of another identity", format!("rootcard:{other}"), 0),
+        ("token ending at the search limit", token.clone(), lim - tl),
+        ("token past the search limit", token.clone(), lim - tl + 1),
+    ] {
+        out.push(v(
+            name,
+            &["LNK-6"],
+            "find_link_token",
+            m().with("account", account.as_str())
+                .with("text", text)
+                .with("pad", pad),
+        ));
+    }
+    out.push(v(
+        "token between bytes that are not UTF-8",
+        &["LNK-6"],
+        "find_link_token",
+        m().with("account", account.as_str())
+            .with("hex", format!("ff{}fe", hex_encode(token.as_bytes()))),
+    ));
+    out.push(v(
+        "token search with an invalid id",
+        &["LNK-6", "ID-3"],
+        "find_link_token",
+        m().with("account", "3F9C").with("text", ""),
+    ));
+
+    // Descriptors ([LNK-22], [LNK-7], [LNK-8], [LNK-13], [LNK-18]).
+    let gh = descriptor_json("github");
+    let web = descriptor_json("web");
+    let dns = descriptor_json("dns");
+    for (service, d) in [("github", &gh), ("dns", &dns), ("web", &web)] {
+        out.push(v(
+            &format!("registry descriptor {service}"),
+            &["LNK-22", "LNK-19"],
+            "parse_descriptor",
+            m().with("descriptor", d.clone()),
+        ));
+    }
+    let gh_bio_step = |step: Value| edit(&gh, &["checks"], Some(m().with("bio", arr(&[step])).into()));
+    let bio_url = |url: &str| {
+        gh_bio_step(j(&format!(
+            r#"{{"kind":"http-json","url":"{url}","equal":{{"/id":"{{uid}}","/login":"{{name}}"}},"token_in":["/bio"]}}"#
+        )))
+    };
+    let cases: Vec<(&str, &[&'static str], Value)> = vec![
+        ("descriptor v 2", &["LNK-13"], edit(&gh, &["v"], Some(2i64.into()))),
+        ("descriptor without v", &["LNK-22"], edit(&gh, &["v"], None)),
+        (
+            "descriptor with an unknown member",
+            &["LNK-22"],
+            edit(&gh, &["url"], Some("x".into())),
+        ),
+        (
+            "descriptor with a bad service name",
+            &["LNK-22"],
+            edit(&gh, &["service"], Some("GitHub".into())),
+        ),
+        ("descriptor rev 0", &["LNK-22"], edit(&gh, &["rev"], Some(0i64.into()))),
+        (
+            "descriptor with an unknown status",
+            &["LNK-22"],
+            edit(&gh, &["status"], Some("paused".into())),
+        ),
+        (
+            "retired descriptor",
+            &["LNK-17"],
+            edit(&gh, &["status"], Some("retired".into())),
+        ),
+        (
+            "descriptor with an unknown field type",
+            &["LNK-13"],
+            edit(&gh, &["fields", "name", "type"], Some("handle".into())),
+        ),
+        (
+            "descriptor with an unknown step kind",
+            &["LNK-13"],
+            gh_bio_step(j(r#"{"kind":"http-html","url":"https://github.com/{name}"}"#)),
+        ),
+        (
+            "renamable names without a uid",
+            &["LNK-18"],
+            edit(
+                &edit(&gh, &["fields", "uid"], None),
+                &["checks"],
+                Some(j(
+                    r#"{"bio":[{"kind":"http-json","url":"https://api.github.com/users/{name}","equal":{"/login":"{name}"},"token_in":["/bio"]}]}"#,
+                )),
+            ),
+        ),
+        (
+            "uid that no step compares",
+            &["LNK-18"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/login":"{name}"},"token_in":["/bio"]}"#,
+            )),
+        ),
+        (
+            "name that no step compares",
+            &["LNK-18"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}"},"token_in":["/bio"]}"#,
+            )),
+        ),
+        (
+            "check that never looks for the token",
+            &["LNK-22"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}","/login":"{name}"}}"#,
+            )),
+        ),
+        ("plain http", &["LNK-9"], bio_url("http://api.github.com/user/{uid}")),
+        (
+            "upper-case literal host",
+            &["LNK-8"],
+            bio_url("https://API.github.com/user/{uid}"),
+        ),
+        (
+            "literal IP address host",
+            &["LNK-8", "LNK-21"],
+            bio_url("https://140.82.112.6/user/{uid}"),
+        ),
+        ("host without a path", &["LNK-8"], bio_url("https://api.github.com")),
+        (
+            "token field in the host",
+            &["LNK-8"],
+            bio_url("https://{name}.github.io/x/{uid}"),
+        ),
+        (
+            "placeholder after a host prefix",
+            &["LNK-8"],
+            bio_url("https://api.github.com{uid}"),
+        ),
+        (
+            "query in a template",
+            &["LNK-8"],
+            bio_url("https://api.github.com/user?id={uid}"),
+        ),
+        (
+            "placeholder inside a path segment",
+            &["LNK-8"],
+            bio_url("https://api.github.com/user/u{uid}"),
+        ),
+        (
+            "two placeholders in one segment",
+            &["LNK-8"],
+            bio_url("https://api.github.com/user/{uid}{name}"),
+        ),
+        (
+            "unknown placeholder",
+            &["LNK-22"],
+            bio_url("https://api.github.com/user/{id}"),
+        ),
+        (
+            "unclosed placeholder",
+            &["LNK-22"],
+            bio_url("https://api.github.com/user/{uid"),
+        ),
+        (
+            "ref placeholder in a check without a ref value",
+            &["LNK-22"],
+            bio_url("https://api.github.com/gists/{ref}"),
+        ),
+        (
+            "ref placeholder in the display URL",
+            &["LNK-22"],
+            edit(&gh, &["display"], Some("https://gist.github.com/{ref}".into())),
+        ),
+        (
+            "wildcard in an equal pointer",
+            &["LNK-22"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/*":"{uid}","/login":"{name}"},"token_in":["/bio"]}"#,
+            )),
+        ),
+        (
+            "bad pointer escape",
+            &["LNK-22"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}","/login":"{name}"},"token_in":["/b~2io"]}"#,
+            )),
+        ),
+        (
+            "pointer without a leading slash",
+            &["LNK-22"],
+            gh_bio_step(j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}","/login":"{name}"},"token_in":["bio"]}"#,
+            )),
+        ),
+        (
+            "form without a check",
+            &["LNK-22"],
+            edit(&gh, &["checks", "gist"], None),
+        ),
+        (
+            "check for an unknown form",
+            &["LNK-22"],
+            edit(
+                &gh,
+                &["checks", "repo"],
+                Some(
+                    edit(&gh, &[], None)
+                        .as_object()
+                        .and_then(|m| m.get("checks"))
+                        .and_then(|c| c.as_object())
+                        .and_then(|c| c.get("bio"))
+                        .cloned()
+                        .unwrap_or_else(m_val),
+                ),
+            ),
+        ),
+        ("five steps", &["LNK-22"], {
+            let st = j(
+                r#"{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}","/login":"{name}"},"token_in":["/bio"]}"#,
+            );
+            edit(
+                &gh,
+                &["checks"],
+                Some(
+                    m().with("bio", arr(&[st.clone(), st.clone(), st.clone(), st.clone(), st]))
+                        .into(),
+                ),
+            )
+        }),
+        (
+            "reversed character range",
+            &["LNK-22"],
+            edit(&gh, &["fields", "name", "chars"], Some("z-a".into())),
+        ),
+        (
+            "min greater than max",
+            &["LNK-22"],
+            edit(&gh, &["fields", "name", "min"], Some(40i64.into())),
+        ),
+        (
+            "uid with characters a link cannot hold",
+            &["LNK-22", "LNK-1"],
+            edit(&gh, &["fields", "uid", "chars"], Some("0-9/".into())),
+        ),
+        (
+            "DNS name after the domain",
+            &["LNK-22"],
+            edit(
+                &dns,
+                &["checks"],
+                Some(j(r#"{"*":[{"kind":"dns-txt","name":"{name}._rootcard"}]}"#)),
+            ),
+        ),
+        (
+            "DNS name for a token field",
+            &["LNK-22"],
+            edit(
+                &gh,
+                &["checks", "bio"],
+                Some(j(
+                    r#"[{"kind":"http-json","url":"https://api.github.com/user/{uid}","equal":{"/id":"{uid}","/login":"{name}"}},{"kind":"dns-txt","name":"_rootcard.{name}"}]"#,
+                )),
+            ),
+        ),
+    ];
+    for (name, rules, d) in cases {
+        out.push(v(name, rules, "parse_descriptor", m().with("descriptor", d)));
+    }
+
+    // user.links ([LNK-1], [LNK-2], [LNK-13]).
+    let alice = j(r#"{"service":"github","name":"alice","uid":"583231","ref":"gist:5b1c0ffee"}"#);
+    let links = |l: Vec<Value>| {
+        m().with(
+            "data",
+            m().with("user.links", m().with("v", 1i64).with("links", arr(&l)))
+                .with("user.name", "Astra"),
+        )
+    };
+    out.push(v(
+        "no links",
+        &["LNK-2"],
+        "parse_links",
+        m().with("data", m().with("user.name", "Astra")),
+    ));
+    out.push(v(
+        "links of three services",
+        &["LNK-1", "LNK-2"],
+        "parse_links",
+        links(vec![
+            alice.clone(),
+            j(r#"{"service":"github","name":"Alice-2","uid":"9","ref":"bio"}"#),
+            j(r#"{"service":"dns","name":"example.org"}"#),
+            j(r#"{"service":"web","name":"xn--bcher-kva.example"}"#),
+        ]),
+    ));
+    let whole: Vec<(&str, Value)> = vec![
+        ("links v 2", m().with("v", 2i64).with("links", arr(&[])).into()),
+        ("links without v", m().with("links", arr(&[])).into()),
+        (
+            "links with an extra member",
+            m().with("v", 1i64).with("links", arr(&[])).with("x", true).into(),
+        ),
+        (
+            "links that are not a list",
+            m().with("v", 1i64).with("links", m()).into(),
+        ),
+        ("links that are a string", "github:alice".into()),
+        (
+            "17 links",
+            m().with("v", 1i64)
+                .with(
+                    "links",
+                    arr(&(0..17)
+                        .map(|k| j(&format!(r#"{{"service":"dns","name":"d{k}.example"}}"#)))
+                        .collect::<Vec<_>>()),
+                )
+                .into(),
+        ),
+    ];
+    for (name, val) in whole {
+        out.push(v(
+            name,
+            &["LNK-1", "LNK-2", "LNK-13"],
+            "parse_links",
+            m().with("data", m().with("user.links", val)),
+        ));
+    }
+    let entries: Vec<(&str, &[&'static str], Vec<Value>)> = vec![
+        (
+            "16 links",
+            &["LNK-1"],
+            (0..16)
+                .map(|k| j(&format!(r#"{{"service":"dns","name":"d{k}.example"}}"#)))
+                .collect(),
+        ),
+        (
+            "a link with an unknown member",
+            &["LNK-1"],
+            vec![
+                j(r#"{"service":"dns","name":"example.org","url":"https://evil.example/"}"#),
+                j(r#"{"service":"web","name":"example.org"}"#),
+            ],
+        ),
+        (
+            "a link that is not an object",
+            &["LNK-1"],
+            vec!["dns:example.org".into()],
+        ),
+        (
+            "a link with a number name",
+            &["LNK-1"],
+            vec![j(r#"{"service":"dns","name":5}"#)],
+        ),
+        (
+            "a link with an empty name",
+            &["LNK-1"],
+            vec![j(r#"{"service":"dns","name":""}"#)],
+        ),
+        (
+            "a link with a bad service name",
+            &["LNK-1"],
+            vec![j(r#"{"service":"Dns","name":"example.org"}"#)],
+        ),
+        (
+            "a link to an unknown service",
+            &["LNK-13"],
+            vec![j(r#"{"service":"gitlab","name":"alice","uid":"1","ref":"bio"}"#)],
+        ),
+        (
+            "a GitHub name with a dot",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"al.ice","uid":"1","ref":"bio"}"#)],
+        ),
+        (
+            "a GitHub name of 40 characters",
+            &["LNK-2"],
+            vec![
+                Map::new()
+                    .with("service", "github")
+                    .with("name", "a".repeat(40))
+                    .with("uid", "1")
+                    .with("ref", "bio")
+                    .into(),
+            ],
+        ),
+        (
+            "a GitHub link without uid",
+            &["LNK-18"],
+            vec![j(r#"{"service":"github","name":"alice","ref":"bio"}"#)],
+        ),
+        (
+            "a GitHub uid with letters",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"58x","ref":"bio"}"#)],
+        ),
+        (
+            "a GitHub link without ref",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1"}"#)],
+        ),
+        (
+            "a GitHub ref of an unknown form",
+            &["LNK-13"],
+            vec![j(
+                r#"{"service":"github","name":"alice","uid":"1","ref":"repo:alice/x"}"#,
+            )],
+        ),
+        (
+            "a GitHub ref with a value for bio",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"bio:x"}"#)],
+        ),
+        (
+            "a GitHub gist ref without a value",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"gist"}"#)],
+        ),
+        (
+            "a GitHub gist ref with an empty value",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"gist:"}"#)],
+        ),
+        (
+            "a GitHub gist ref in upper case",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"gist:5B1C"}"#)],
+        ),
+        (
+            "a ref form with a bad character",
+            &["LNK-2"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"Gist:5b1c"}"#)],
+        ),
+        (
+            "a dot-segment gist value",
+            &["LNK-8"],
+            vec![j(r#"{"service":"github","name":"alice","uid":"1","ref":"gist:.."}"#)],
+        ),
+        (
+            "a domain link with a uid",
+            &["LNK-2"],
+            vec![j(r#"{"service":"dns","name":"example.org","uid":"1"}"#)],
+        ),
+        (
+            "a domain link with a ref",
+            &["LNK-13"],
+            vec![j(r#"{"service":"dns","name":"example.org","ref":"txt"}"#)],
+        ),
+        (
+            "a domain in upper case",
+            &["LNK-21"],
+            vec![j(r#"{"service":"web","name":"Example.org"}"#)],
+        ),
+        (
+            "an IP address as a domain",
+            &["LNK-21"],
+            vec![j(r#"{"service":"web","name":"192.168.0.1"}"#)],
+        ),
+        (
+            "a single-label domain",
+            &["LNK-21"],
+            vec![j(r#"{"service":"web","name":"localhost"}"#)],
+        ),
+        (
+            "a domain with a trailing dot",
+            &["LNK-21"],
+            vec![j(r#"{"service":"dns","name":"example.org."}"#)],
+        ),
+        (
+            "a Unicode domain",
+            &["LNK-21", "LNK-12"],
+            vec![j(r#"{"service":"web","name":"bücher.example"}"#)],
+        ),
+        (
+            "the same GitHub account twice",
+            &["LNK-2"],
+            vec![
+                alice.clone(),
+                j(r#"{"service":"github","name":"ALICE","uid":"583231","ref":"bio"}"#),
+            ],
+        ),
+        (
+            "the same domain for two services",
+            &["LNK-2"],
+            vec![
+                j(r#"{"service":"dns","name":"example.org"}"#),
+                j(r#"{"service":"web","name":"example.org"}"#),
+            ],
+        ),
+        (
+            "a duplicate after an invalid link",
+            &["LNK-2"],
+            vec![
+                j(r#"{"service":"dns","name":"Example.org"}"#),
+                j(r#"{"service":"dns","name":"example.org"}"#),
+                j(r#"{"service":"dns","name":"example.org"}"#),
+            ],
+        ),
+    ];
+    for (name, rules, l) in entries {
+        out.push(v(name, rules, "parse_links", links(l)));
+    }
+    let retired = edit(&gh, &["status"], Some("retired".into()));
+    out.push(v(
+        "a link to a retired service",
+        &["LNK-17"],
+        "parse_links",
+        links(vec![alice.clone()]).with("descriptors", arr(&[retired.clone(), dns.clone()])),
+    ));
+
+    out.push(v(
+        "links value",
+        &["LNK-1", "LNK-4"],
+        "links_value",
+        m().with(
+            "links",
+            arr(&[alice.clone(), j(r#"{"service":"dns","name":"example.org"}"#)]),
+        ),
+    ));
+    out.push(v(
+        "links value with a duplicate",
+        &["LNK-2", "LNK-4"],
+        "links_value",
+        m().with("links", arr(&[alice.clone(), alice.clone()])),
+    ));
+    out.push(v(
+        "links value with an unknown service",
+        &["LNK-13", "LNK-4"],
+        "links_value",
+        m().with("links", arr(&[j(r#"{"service":"gitlab","name":"alice"}"#)])),
+    ));
+    out.push(v(
+        "links value with an invalid link",
+        &["LNK-2", "LNK-4"],
+        "links_value",
+        m().with("links", arr(&[j(r#"{"service":"dns","name":"example"}"#)])),
+    ));
+    out.push(v(
+        "links value with 17 links",
+        &["LNK-1", "LNK-4"],
+        "links_value",
+        m().with(
+            "links",
+            arr(&(0..17)
+                .map(|k| j(&format!(r#"{{"service":"dns","name":"d{k}.example"}}"#)))
+                .collect::<Vec<_>>()),
+        ),
+    ));
+
+    // Requests and display ([LNK-8], [LNK-10], [LNK-12]).
+    let bio = j(r#"{"service":"github","name":"Alice","uid":"583231","ref":"bio"}"#);
+    let dns_link = j(r#"{"service":"dns","name":"example.org"}"#);
+    let web_link = j(r#"{"service":"web","name":"astra.dev"}"#);
+    for (name, link) in [
+        ("GitHub bio", &bio),
+        ("GitHub gist", &alice),
+        ("DNS", &dns_link),
+        ("web", &web_link),
+    ] {
+        out.push(v(
+            &format!("requests for a {name} link"),
+            &["LNK-8", "LNK-10"],
+            "link_requests",
+            m().with("link", link.clone()),
+        ));
+        out.push(v(
+            &format!("display URL of a {name} link"),
+            &["LNK-12"],
+            "link_display",
+            m().with("link", link.clone()),
+        ));
+    }
+    out.push(v(
+        "requests for an invalid link",
+        &["LNK-2", "LNK-10"],
+        "link_requests",
+        m().with("link", j(r#"{"service":"github","name":"alice","uid":"1"}"#)),
+    ));
+    out.push(v(
+        "requests for an unknown service",
+        &["LNK-13"],
+        "link_requests",
+        m().with("link", j(r#"{"service":"gitlab","name":"alice"}"#)),
+    ));
+    out.push(v(
+        "requests with another service's descriptor",
+        &["LNK-10"],
+        "link_requests",
+        m().with("link", dns_link.clone()).with("service", "web"),
+    ));
+    let test = j(r#"{"v":1,"service":"test","rev":1,"status":"active",
+        "fields":{"name":{"type":"token","chars":"!-~","min":1,"max":64},"uid":{"type":"token","chars":"0-9A-Za-z.:_-","min":1,"max":64}},
+        "display":"https://example.org/u/{name}",
+        "checks":{"*":[{"kind":"http-json","url":"https://example.org/u/{name}/{uid}","equal":{"/id":"{uid}","/name":"{name}","/tag":"id-{uid}"},"token_in":["/about","/links/*/text"]}]}}"#);
+    out.push(v(
+        "test descriptor",
+        &["LNK-22"],
+        "parse_descriptor",
+        m().with("descriptor", test.clone()),
+    ));
+    let tl_link = j(r#"{"service":"test","name":"a/b?#%&+","uid":"x.y:z"}"#);
+    out.push(v(
+        "values are percent-encoded",
+        &["LNK-8"],
+        "link_requests",
+        m().with("link", tl_link.clone())
+            .with("descriptors", arr(std::slice::from_ref(&test))),
+    ));
+    out.push(v(
+        "display values are percent-encoded",
+        &["LNK-8", "LNK-12"],
+        "link_display",
+        m().with("link", tl_link.clone())
+            .with("descriptors", arr(std::slice::from_ref(&test))),
+    ));
+    for dot in [".", ".."] {
+        out.push(v(
+            &format!("the name {dot:?} is never a value"),
+            &["LNK-8"],
+            "link_requests",
+            m().with("link", m().with("service", "test").with("name", dot).with("uid", "1"))
+                .with("descriptors", arr(std::slice::from_ref(&test))),
+        ));
+    }
+    out.push(v(
+        "the name ... is a value",
+        &["LNK-8"],
+        "link_requests",
+        m().with("link", m().with("service", "test").with("name", "...").with("uid", "1"))
+            .with("descriptors", arr(std::slice::from_ref(&test))),
+    ));
+
+    // Checking ([LNK-6], [LNK-7], [LNK-9], [LNK-10], [LNK-18], [LNK-20]).
+    let user = |id: &str, login: &str, bio: &str| {
+        format!(
+            r#"{{"login":"{login}","id":{id},"node_id":"MDQ6VXNlcjU4MzIzMQ==","type":"User","site_admin":false,"name":null,"company":null,"bio":{bio},"public_repos":8,"created_at":"2011-03-01T12:00:00Z"}}"#
+        )
+    };
+    let gist = |owner: &str, content: &str| {
+        format!(
+            r#"{{"id":"5b1c0ffee","public":true,"files":{{"rootcard.txt":{{"filename":"rootcard.txt","size":61,"content":"{content}"}},"other.md":{{"filename":"other.md","content":"hello"}}}},"owner":{owner},"comments":1,"history":[]}}"#
+        )
+    };
+    let body = |t: String| m().with("text", t);
+    let ok_bio = format!("\"Astronomer. {token}\"");
+    let check = |name: &str, rules: &[&'static str], link: &Value, responses: Vec<Value>| {
+        v(
+            name,
+            rules,
+            "check_link",
+            m().with("link", link.clone())
+                .with("account", account.as_str())
+                .with("responses", arr(&responses)),
+        )
+    };
+    out.push(check(
+        "GitHub bio verifies",
+        &["LNK-10", "LNK-6"],
+        &bio,
+        vec![body(user("583231", "alice", &ok_bio)).into()],
+    ));
+    out.push(check(
+        "GitHub bio of a renamed account",
+        &["LNK-18", "LNK-10"],
+        &bio,
+        vec![body(user("583231", "alice2", &ok_bio)).into()],
+    ));
+    out.push(check(
+        "GitHub bio of another account",
+        &["LNK-18", "LNK-10"],
+        &bio,
+        vec![body(user("583232", "alice", &ok_bio)).into()],
+    ));
+    out.push(check(
+        "GitHub id as a string",
+        &["LNK-18"],
+        &bio,
+        vec![body(user("\"583231\"", "alice", &ok_bio)).into()],
+    ));
+    out.push(check(
+        "GitHub id as a fraction",
+        &["LNK-18"],
+        &bio,
+        vec![body(user("583231.0", "alice", &ok_bio)).into()],
+    ));
+    out.push(check(
+        "GitHub bio without the token",
+        &["LNK-10"],
+        &bio,
+        vec![body(user("583231", "alice", "\"Astronomer.\"")).into()],
+    ));
+    out.push(check(
+        "GitHub bio null",
+        &["LNK-10", "LNK-9"],
+        &bio,
+        vec![body(user("583231", "alice", "null")).into()],
+    ));
+    out.push(check(
+        "GitHub bio with another identity's token",
+        &["LNK-6", "LNK-10"],
+        &bio,
+        vec![body(user("583231", "alice", &format!("\"rootcard:{other}\""))).into()],
+    ));
+    out.push(check(
+        "GitHub token outside the bio",
+        &["LNK-7"],
+        &bio,
+        vec![
+            body(user("583231", "alice", "\"x\"").replace("\"type\":\"User\"", &format!("\"type\":\"{token}\"")))
+                .into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub request failed",
+        &["LNK-9", "LNK-10"],
+        &bio,
+        vec![m().with("failed", true).into()],
+    ));
+    out.push(check(
+        "GitHub answer that is not JSON",
+        &["LNK-9"],
+        &bio,
+        vec![body("<html>rate limited</html>".into()).into()],
+    ));
+    out.push(check(
+        "GitHub answer over 64 KiB",
+        &["LNK-9"],
+        &bio,
+        vec![
+            body(user("583231", "alice", &ok_bio))
+                .with(
+                    "pad",
+                    rootcard::links::RESPONSE_LIMIT as i64 - user("583231", "alice", &ok_bio).len() as i64 + 1,
+                )
+                .into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub answer of exactly 64 KiB",
+        &["LNK-9"],
+        &bio,
+        vec![
+            body(user("583231", "alice", &ok_bio))
+                .with(
+                    "pad",
+                    rootcard::links::RESPONSE_LIMIT as i64 - user("583231", "alice", &ok_bio).len() as i64,
+                )
+                .into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub answer with a duplicate member",
+        &["LNK-9"],
+        &bio,
+        vec![body(user("583231", "alice", &ok_bio).replace("\"type\"", "\"id\":1,\"type\"")).into()],
+    ));
+    let owner_ok = r#"{"login":"alice","id":583231}"#;
+    out.push(check(
+        "GitHub gist verifies",
+        &["LNK-10", "LNK-7"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            body(gist(owner_ok, &token)).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist of another owner",
+        &["LNK-18", "LNK-10"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            body(gist(r#"{"login":"mallory","id":7}"#, &token)).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist without an owner",
+        &["LNK-18"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            body(gist("null", &token)).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist without the token",
+        &["LNK-10"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            body(gist(owner_ok, "hi")).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist token only in a comment field",
+        &["LNK-7"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            body(gist(owner_ok, "hi").replace("\"comments\":1", &format!("\"comments\":\"{token}\""))).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist of a renamed account",
+        &["LNK-18"],
+        &alice,
+        vec![
+            body(user("583231", "bob", "null")).into(),
+            body(gist(owner_ok, &token)).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist with one answer",
+        &["LNK-10"],
+        &alice,
+        vec![body(user("583231", "alice", "null")).into()],
+    ));
+    out.push(check(
+        "GitHub gist, second request failed",
+        &["LNK-9"],
+        &alice,
+        vec![
+            body(user("583231", "alice", "null")).into(),
+            m().with("failed", true).into(),
+        ],
+    ));
+    out.push(check(
+        "GitHub gist, first step fails before the second",
+        &["LNK-10"],
+        &alice,
+        vec![body(user("1", "alice", "null")).into(), m().with("failed", true).into()],
+    ));
+    out.push(check(
+        "DNS verifies",
+        &["LNK-10"],
+        &dns_link,
+        vec![
+            m().with(
+                "txt",
+                arr(&[
+                    arr(&["v=spf1 -all".into()]),
+                    arr(&["rootcard:".into(), account.as_str().into()]),
+                ]),
+            )
+            .into(),
+        ],
+    ));
+    out.push(check(
+        "DNS token split across two records",
+        &["LNK-10"],
+        &dns_link,
+        vec![
+            m().with(
+                "txt",
+                arr(&[arr(&["rootcard:".into()]), arr(&[account.as_str().into()])]),
+            )
+            .into(),
+        ],
+    ));
+    out.push(check(
+        "DNS without records",
+        &["LNK-10"],
+        &dns_link,
+        vec![m().with("txt", arr(&[])).into()],
+    ));
+    out.push(check(
+        "DNS lookup failed",
+        &["LNK-9"],
+        &dns_link,
+        vec![m().with("failed", true).into()],
+    ));
+    out.push(check(
+        "DNS answered with a body",
+        &["LNK-10"],
+        &dns_link,
+        vec![body(token.clone()).into()],
+    ));
+    out.push(check(
+        "web file verifies",
+        &["LNK-10"],
+        &web_link,
+        vec![body(format!("{token}\n")).into()],
+    ));
+    out.push(check(
+        "web file with HTML around the token",
+        &["LNK-6"],
+        &web_link,
+        vec![body(format!("<p>{token}</p>")).into()],
+    ));
+    out.push(check(
+        "web file without the token",
+        &["LNK-10"],
+        &web_link,
+        vec![body("hello".into()).into()],
+    ));
+    out.push(check(
+        "web file answered with TXT records",
+        &["LNK-10"],
+        &web_link,
+        vec![m().with("txt", arr(&[arr(&[token.as_str().into()])])).into()],
+    ));
+    out.push(v(
+        "check with an invalid account id",
+        &["LNK-10", "ID-3"],
+        "check_link",
+        m().with("link", web_link.clone())
+            .with("account", "3F9C")
+            .with("responses", arr(&[body(token.clone()).into()])),
+    ));
+    out.push(v(
+        "check of an invalid link",
+        &["LNK-2"],
+        "check_link",
+        m().with("link", j(r#"{"service":"web","name":"localhost"}"#))
+            .with("account", account.as_str())
+            .with("responses", arr(&[body(token.clone()).into()])),
+    ));
+    let test_body = |id: &str, nm: &str, tag: &str| {
+        format!(r#"{{"id":"{id}","name":"{nm}","tag":"{tag}","links":[{{"text":"x"}},{{"text":"{token}"}}]}}"#)
+    };
+    let t1 = j(r#"{"service":"test","name":"Alice","uid":"77"}"#);
+    let with_test = |name: &str, rules: &[&'static str], b: String| {
+        v(
+            name,
+            rules,
+            "check_link",
+            m().with("link", t1.clone())
+                .with("account", account.as_str())
+                .with("descriptors", arr(std::slice::from_ref(&test)))
+                .with("responses", arr(&[body(b).into()])),
+        )
+    };
+    out.push(with_test(
+        "token in an array element",
+        &["LNK-10"],
+        test_body("77", "Alice", "id-77"),
+    ));
+    out.push(with_test(
+        "exact names differ in case",
+        &["LNK-2", "LNK-18"],
+        test_body("77", "alice", "id-77"),
+    ));
+    out.push(with_test(
+        "a filled template differs",
+        &["LNK-18"],
+        test_body("77", "Alice", "id-78"),
+    ));
+    Ok(out)
+}
+
 /// Run every vector and produce the JSON of one file.
 fn file(description: &str, vectors: Vec<V>) -> Result<Value, String> {
     let mut list = Vec::new();
@@ -2587,6 +3648,13 @@ pub fn files() -> Result<Vec<(&'static str, Value)>, String> {
         (
             "file.json",
             file("Account files and recovery cards (SPEC §15)", file_vectors(&s))?,
+        ),
+        (
+            "link.json",
+            file(
+                "Linked accounts: answers, tokens, descriptors, links, requests and checks (SPEC §12.3)",
+                link_vectors(&s)?,
+            )?,
         ),
     ])
 }

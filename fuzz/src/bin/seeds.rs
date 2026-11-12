@@ -159,11 +159,66 @@ fn run_host_seeds(corpus: &Corpus) {
     }
 }
 
+/// Seeds of the `links` target from the vectors of `link.json`.
+fn link_seeds(corpus: &mut Corpus, v: &rootcard_fuzz::Vector) {
+    let get = |name: &str| v.input.get(name);
+    let raw = |name: &str| get(name).and_then(Value::as_str).and_then(|t| hex_decode(t).ok());
+    match v.op.as_str() {
+        "parse_response_json" => {
+            if let Some(b) = raw("text") {
+                corpus.add([vec![0], b].concat());
+            }
+        }
+        "parse_descriptor" => {
+            if let Some(d) = get("descriptor") {
+                corpus.add(with_byte(1, d));
+            }
+        }
+        "parse_links" => {
+            if let Some(d) = get("data") {
+                corpus.add(with_byte(2, &Value::Array(vec![d.clone()])));
+            }
+        }
+        "check_link" => {
+            if let (Some(link), Some(Value::Array(responses))) = (get("link"), get("responses")) {
+                let data = Map::new().with(
+                    "user.links",
+                    Map::new()
+                        .with("v", 1i64)
+                        .with("links", Value::Array(vec![link.clone()])),
+                );
+                let mut doc = vec![Value::Object(data)];
+                for r in responses {
+                    let r = r.as_object();
+                    if let Some(t) = r.and_then(|r| r.get("text")) {
+                        doc.push(t.clone());
+                    } else if let Some(Value::Array(recs)) = r.and_then(|r| r.get("txt")) {
+                        doc.push(Value::Array(
+                            recs.iter()
+                                .flat_map(|x| x.as_array().cloned().unwrap_or_default())
+                                .collect(),
+                        ));
+                    } else {
+                        doc.push(false.into());
+                    }
+                }
+                corpus.add(with_byte(2, &Value::Array(doc)));
+            }
+        }
+        "find_link_token" => {
+            if let Some(t) = get("text").and_then(Value::as_str) {
+                corpus.add([vec![3], t.as_bytes().to_vec()].concat());
+            }
+        }
+        _ => {}
+    }
+}
+
 fn main() -> std::io::Result<()> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("corpus");
-    let names = ["json", "text", "log", "log_signed", "documents", "host"];
+    let names = ["json", "text", "log", "log_signed", "documents", "host", "links"];
     let mut c: Vec<Corpus> = names.iter().map(|n| Corpus::new(&root, n)).collect();
-    let [json, text, log, log_signed, documents, host] = &mut c[..] else {
+    let [json, text, log, log_signed, documents, host, links] = &mut c[..] else {
         unreachable!()
     };
 
@@ -207,6 +262,7 @@ fn main() -> std::io::Result<()> {
         if let Some((op, d)) = seed {
             documents.add(with_byte(op, &d));
         }
+        link_seeds(links, v);
         if let Some(contents) = v
             .output
             .as_ref()

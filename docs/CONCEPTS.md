@@ -131,8 +131,8 @@ identity now.
 **When it is used.** Whenever someone other than the primary host needs to know "is this really `Astra#3F9C`, now?"
 Examples are a service keyed by the account id, linking two identities, or a host checking a peer's user. Logins are
 not proofs: they have their own message and happen only at the primary host (§13.3). A standard sign-in flow at other
-services built on proofs is a proposal ([proposals/signin.md](proposals/signin.md)), and so is showing that an identity
-owns a GitHub account or a domain ([proposals/links.md](proposals/links.md)).
+services built on proofs is a proposal ([proposals/signin.md](proposals/signin.md)). Showing that an identity owns a
+GitHub account or a domain needs no proof at all: it is a linked account (§6).
 
 ## 5. Verification
 
@@ -162,6 +162,35 @@ strict Ed25519, a hash or a size ([CRY-3], §17).
   verifier knows ([VER-6]). A new instance minted with the recovery key therefore ends every old vault copy, password,
   session and account proof at once ([HST-7], [HST-11]).
 
+## 6. Linked accounts (SPEC §12.3)
+
+**What it is.** A statement that the identity and an account elsewhere have the same owner: "`Astra#3F9C` is `alice`
+on GitHub and owns `example.org`". It has two sides, and neither alone is a link:
+
+| Side | Where | Who can write it | Says |
+|---|---|---|---|
+| Identity side | `user.links` in the signed public profile ([LNK-1]) | the account key (low power, [LNK-4]) | "I am GitHub `alice` (id 583231)" |
+| External side | the link token `rootcard:<account id>` ([LNK-5]) in a place only the account's owner can write ([LNK-7]): a GitHub bio or gist, a DNS TXT record at `_rootcard.<domain>`, the file `https://<domain>/.well-known/rootcard-link` | the external account's owner | "I belong to this account id" |
+
+**How it works.**
+- Services are data, not code: one **descriptor** per service in the registry `spec/links/` ([LNK-22]), bundled with
+  both cores ([LNK-19]). A descriptor names the account's fields, the requests that check it and what the answers must
+  say. The spec names no service, so a new one is a reviewed data change.
+- A verifier reads the links of the current profile (`parse_links`), asks the core what to fetch (`link_requests`),
+  fetches it under strict rules (HTTPS, no redirects, 64 KiB, 10 s, [LNK-9]) and lets the core decide (`check_link`):
+  verified, `wrong_owner`, `token_missing`, or `fetch_failed` when the service could not be read ([LNK-10]).
+- Services whose names can change hands are checked by a stable id as well as the name ([LNK-18]), so a GitHub account
+  that was renamed and whose name someone else took is `wrong_owner`, not verified.
+- The token holds only the account id, which never changes, so links survive password resets, moves and recovery
+  rotations; the profile is carried to each new instance.
+- Whatever the verifier does not know (a service, a `ref` form, a version) is `unsupported`: never verified, and never
+  breaking the other links ([LNK-13]).
+
+**When it is used.** An identity page shows who someone is elsewhere; a service can show "also GitHub `alice`" next to a
+handle. Each viewer checks for itself, and shows "verified" only for what it checked, with the time ([LNK-11]). A link
+is as strong as the external account (THREAT_MODEL.md AR15), and e-mail addresses are not links: no place in a mailbox
+can be read by everyone and written only by its owner.
+
 ## The flows at a glance
 
 | Flow | Log | Vault | Card | Checked by |
@@ -173,4 +202,5 @@ strict Ed25519, a hash or a size ([CRY-3], §17).
 | Forgot password, revoke, move ([KT-3], [KT-4], [KT-8]) | new `instance` | new vault for the new instance | required | old sessions and vaults end |
 | Rotate the recovery key ([KT-5]) | `rotate_recovery` | new grant signed by the new key | new card with `log` | — |
 | Prove to a third party ([PRF-4]) | read | — | root proofs only | `verify_proof` |
+| Link an account ([LNK-4]) | unchanged | — | — | each viewer: `verify_public`, `parse_links`, `check_link` |
 | Retire ([KT-6]) | `retire` | deleted by hosts ([HST-8]) | required | everything answers `account_retired` |

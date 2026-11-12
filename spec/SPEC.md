@@ -744,6 +744,155 @@ PublicProfile { "v": 1, "account": "<account id>", "instance": "<b64u instance e
 - **[DAT-9]** A public profile is public and can be copied by anyone; an update does not remove older copies. A client
   SHOULD say so before saving.
 
+### 12.3 Linked accounts
+
+A **link** says that the identity and an account at another service (a GitHub account, a domain) have the same owner.
+It has two sides, and a verifier checks both itself: the **identity side** is the signed public profile, which lists
+the accounts the identity claims; the **external side** is the **link token**, placed where only the external account's
+owner can write. Neither side alone makes a link. Links change nothing that is hashed or signed: they are a profile
+data key ([DAT-5]), so ids, logs, profiles and proofs made so far stay valid, and they need no label.
+
+**Identity side.**
+
+- **[LNK-1]** An identity's links are the value of the public profile data key `user.links`:
+  ```
+  { "v": 1, "links": [ Link, ... ] }          0 to 16 links
+
+  Link { "service": "<service name>",          1–32 characters a–z 0–9 -, beginning with a–z
+         "name":    "<account name>",          1–256 bytes; the service's rules apply (LNK-22)
+         "uid"?:    "<stable account id>",     1–64 characters A–Z a–z 0–9 . _ : -; the service's rules apply
+         "ref"?:    "<where the token is>" }   1–256 bytes: a form "<form>" or "<form>:<value>", where <form> has the
+                                               characters of a service name; the service's rules apply
+  ```
+  Members of a link are strings and no other members exist → `bad_link`.
+- **[LNK-2]** `parse_links(data, registry)` reads `user.links` from a verified profile's `data` ([DAT-2]); no such key
+  means no links. The value as a whole: an object with exactly `v` and `links`, `v` an integer → `bad_link`; `v` = 1 →
+  `unsupported` otherwise ([LNK-13]); `links` an array of at most 16 elements → `bad_link`. Then each link on its own,
+  in order: its schema ([LNK-1]) → `bad_link`; a descriptor for its `service` in the registry that is not retired →
+  `unsupported`; the descriptor's rules for `name`, then `uid` (present exactly when the descriptor has a `uid` field),
+  then `ref` ([LNK-22]) → `bad_link`, or `unsupported` for a form the descriptor does not know; and not the same account
+  as an earlier valid link of the same service (names compared as the service's `name` field says) → `bad_link`. A bad
+  link is reported for that link only: the profile stays valid and the other links are still checked.
+- **[LNK-3]** The identity side of a link is valid only in the newest valid profile the verifier has for the current
+  instance ([DAT-3], [VER-6]). A link that is not in that profile is not shown, whatever the external side says.
+- **[LNK-4]** Adding, changing and removing links is a profile edit: **low power** ([PWR-3]). A client that writes
+  `user.links` builds the value with `links_value(links, registry)`, which refuses what `parse_links` would not accept
+  (→ `bad_link`, `unsupported`); it SHOULD check a new link (§12.3, *Checking*) before it publishes the profile, and it
+  MUST show the user the service, the name and that the link is public ([DAT-9]). When the user removes a link, the
+  client tells the user to remove the token too, because older copies of the profile still exist.
+
+**External side.**
+
+- **[LNK-5]** The **link token** of an identity is `link_token(account) = "rootcard:" + account`, with the account id in
+  strict form ([ID-3]) → `bad_field`: 61 ASCII characters. It names only the account id, which never changes ([ID-4]),
+  so password resets, moves, recovery rotations and later key types leave every posted token valid.
+- **[LNK-6]** `find_link_token(text, account)` is true if and only if `link_token(account)` occurs, compared byte for
+  byte, in the first **64 KiB** of the bytes `text`, at a position where the byte before it, if any, and the byte after
+  it within those 64 KiB, if any, are not ASCII letters or digits. One text MAY hold the tokens of several identities.
+- **[LNK-7]** A check reads the token only at locations where **only the account's owner can write**: a profile field,
+  a file the owner publishes, a DNS record. Places where others can write (comments, issues, replies, wikis) are never
+  read, even on the owner's page. Each descriptor names its locations; the registry's review keeps this rule.
+
+**Services.** The specification names no service. Each service is a **descriptor** in the **service registry**
+`spec/links/<service>.json`, released with the packages, and both cores interpret descriptors without I/O. A new
+service, or a change to how a service is checked, is a reviewed data change, not a format change.
+
+- **[LNK-22]** A descriptor (`parse_descriptor`) is:
+  ```
+  Descriptor { "v": 1, "service": "<service name>", "rev": n, "status": "active" | "retired",
+               "fields": { "name": Field, "uid"?: Field, "ref"?: { "<form>": Field, ... } },
+               "display": "<URL template>",
+               "checks": { "<form, or * for links without ref>": [ Step, ... ] } }
+  Field  { "type": "token", "chars": "<character set>", "min": n, "max": n, "compare"?: "exact" | "ascii-ci" }
+       | { "type": "domain" }                       a domain name (LNK-21)
+       | { "type": "none" }                         only for a form: the ref is the form alone
+  Step   { "kind": "http-json", "url": "<URL template>", "equal"?: { "<pointer>": "<template>", ... },
+           "token_in"?: [ "<pointer>", ... ] }      at least one of equal and token_in
+       | { "kind": "http-text", "url": "<URL template>" }
+       | { "kind": "dns-txt", "name": "<DNS template>" }
+  ```
+  with these rules, each → `bad_field`, and → `unsupported` for a `v`, a field `type` or a step `kind` the interpreter
+  does not know ([LNK-13]):
+  1. No members other than those shown; `rev` is 1 … 2³²; `name` is a `token` or `domain` field, `uid` a `token`
+     field whose characters are those of [LNK-1] and whose `max` is at most 64, a form a `token` or `none` field, 1 to
+     16 forms. A `token` field has 1 ≤ `min` ≤ `max` ≤ 256 and `compare` `exact` by default; its value has `min` to
+     `max` characters from its set and is never `.` or `..`. The character set is 1 to 64 printable ASCII characters,
+     where `x-y` with `x ≤ y` is the range from `x` to `y` and any other character, including `-` at the start or the
+     end, stands for itself. Fields are checked by these rules only, never by regular expressions.
+  2. Templates are 1 to 256 bytes of literal text and the placeholders `{name}`, `{uid}` (only with a `uid` field) and
+     `{ref}` (the part after the form's `:`, only in the check of a form with a value, never in `display`); any other
+     `{` or `}` is invalid. A **URL template** is `https://`, then either a literal host name ([LNK-21]) or `{name}` of
+     type `domain`, then a path that starts with `/`. Literal path text is `A–Z a–z 0–9 - . _ ~ /` (no query, no
+     fragment), and every placeholder in the path is a whole segment: after a `/` and before a `/` or the end. A **DNS
+     template** is `{name}` of type `domain`, optionally after literal labels of 1 to 63 characters `a–z 0–9 - _`, each
+     followed by a dot (`_rootcard.{name}`).
+  3. A pointer is a JSON pointer (RFC 6901; `~0` and `~1` the only escapes) of at most 8 segments; in `token_in` a
+     segment `*` stands for every member of an object or element of an array. `equal` and `token_in` have 1 to 8
+     entries.
+  4. `checks` has an entry for every form and no other keys than forms and `*`; each has 1 to 4 steps, of which at
+     least one looks for the token (`http-text`, `dns-txt`, or `http-json` with `token_in`).
+- **[LNK-18]** A descriptor whose `name` is not a `domain` MUST have a `uid` field, and every check list MUST compare
+  both the `uid` and the `name` with an `equal` entry whose template is exactly `{uid}`, respectively `{name}` →
+  `bad_field`. Services let names be renamed and registered again; the stable id catches a name that now belongs to
+  someone else. A `domain` name has no stable id: whoever holds the domain is its owner (THREAT_MODEL.md AR15).
+- **[LNK-19]** Verifiers use descriptors **bundled with their code** and reviewed like code (`registry()` in both
+  cores), never loaded at run time from a URL, a host or profile data: whoever controls a descriptor decides what
+  "verified" means for that service. A verifier that adds descriptors of its own MUST NOT present their results as the
+  registry's, and the registry's descriptor wins for a service it defines (`find_descriptor` returns the first).
+- **[LNK-21]** A **domain name** is lower-case ASCII: at most 253 characters, at least two labels of 1 to 63 characters
+  `a–z 0–9 -` that neither begin nor end with `-`, and a last label that is not all digits, so that it is never an IP
+  address. Internationalized names are written in their ASCII (`xn--`) form.
+
+**Checking.**
+
+- **[LNK-8]** `link_requests(link, descriptor)` gives the requests of the link's check list (the form of its `ref`, or
+  `*`), in order: `{ kind, url }` or `{ kind: "dns-txt", name }`, with the placeholders filled from the link's
+  validated fields (→ `bad_link`, `unsupported` as in [LNK-2]). In URLs every byte of a value outside `A–Z a–z 0–9 - .
+  _ ~` is percent-encoded with upper-case hex, so a value cannot change the host, add a segment or start a query, and
+  since a value is never `.` or `..` and fills a whole segment, it cannot be a dot segment either. A verifier never
+  fetches or displays a URL taken from profile data ([DAT-8]); `link_display(link, descriptor)` gives the URL that
+  shows the account, from `display`, to be shown or linked, never fetched.
+- **[LNK-9]** The caller performs the requests: HTTPS with certificate checks, **no redirects**, no credentials or
+  cookies, at most **64 KiB** read, at most **10 s**. A verifier that runs on a server MUST NOT connect to an address
+  that is not public (loopback, private, link-local, unique-local, multicast or unspecified), checked on the address it
+  connects to after resolution. A request that fails in any way (network, TLS, a status other than 200, a redirect, the
+  size, the time, a refused address) is answered as failed. JSON answers are read with `parse_response_json`: RFC 8259
+  with unique member names, no lone surrogate escapes and at most 32 levels; `null` and numbers that are not safe
+  integers in the form `0|-?[1-9][0-9]*` are left out (→ `bad_json` otherwise, which a check reports as `fetch_failed`).
+  Text answers are only searched for the token, never rendered.
+- **[LNK-10]** `check_link(link, account, descriptor, answers)` takes one answer per request (failed, a body, or a DNS
+  answer's TXT records, each a list of strings) and runs the steps in order; the first that fails decides:
+  1. The answer: failed → `fetch_failed`; a body or the TXT strings together over 64 KiB → `fetch_failed`; an answer
+     of the wrong kind or a number of answers that is not the number of requests → `bad_field`.
+  2. `http-json`: the body parses ([LNK-9]) → `fetch_failed`. Each `equal` entry: the value at the pointer is a string
+     equal to the filled template (compared as the field says when the template is exactly one placeholder of a field,
+     otherwise exactly), or an integer whose decimal form is the filled template → `wrong_owner`. With `token_in`: some
+     string at one of the pointers holds the token ([LNK-6]) → `token_missing`.
+  3. `http-text`: the body holds the token → `token_missing`. `dns-txt`: the strings of one record, concatenated, hold
+     the token → `token_missing`.
+
+  Success means **verified**, by this verifier, now. The account id is checked first → `bad_field`.
+- **[LNK-11]** A verifier shows a link as verified only if **it** checked both sides, and says when. A result someone
+  else checked (a server's cache, a badge image, a host) is shown as that party's statement, with its name and time,
+  never as the viewer's own. A verifier SHOULD check again before showing a result older than **24 h** as verified.
+- **[LNK-12]** Names, uids and references are displayed only as text ([DAT-8]); domain names in their ASCII form. The
+  status of a link is shown as one of: *verified* (with the time), *not verified* (`wrong_owner`, `token_missing`, with
+  the reason), *not checked* (`fetch_failed`, with a retry), *unsupported* (the name as text only), *invalid*
+  (`bad_link`, not shown, or shown to the owner).
+- **[LNK-13]** **Unknown means unsupported, never invalid.** A `user.links` value with an unknown `v`, a link to an
+  unknown or retired service, a `ref` form a descriptor does not know, and a descriptor with an unknown `v`, field type
+  or step kind are `unsupported`: never shown as verified, and never making other links or the profile fail. This lets
+  newer clients add services and forms without breaking older verifiers. ([EXT-4] is about signed structures; profile
+  data is not one, [DAT-5].)
+- **[LNK-14]** **Stored fields are stable; checks may change.** The meaning of `service`, `name`, `uid` and the existing
+  `ref` forms of a service never changes once its descriptor is in the registry. Its checks (endpoints, response
+  members) MAY change with the service's API, with a new `rev` and new vectors, as long as the same stored link means
+  the same account. A change of meaning needs a new service name.
+- **[LNK-17]** A service that shuts down is marked `retired` in the registry: its links are `unsupported`, and its name
+  is never reused. A service that cannot be reached makes its links `fetch_failed`, never `wrong_owner`.
+
+Rule ids [LNK-15], [LNK-16] and [LNK-20] were used in the draft proposal and are not assigned.
+
 ---
 
 ## 13. Vault fetch, login and password change
@@ -1198,6 +1347,10 @@ hash or a size. Its cost per request is a few Ed25519 verifications and one atom
 | Password slots per vault | 15 (plus the recovery lock) | [LCK-1] |
 | Public profile | 16 KiB | [DAT-1] |
 | Data key | 64 characters | [DAT-4] |
+| Links per profile | 16 | [LNK-1] |
+| Token search, answer of a linked service | 64 KiB | [LNK-6], [LNK-9] |
+| Request to a linked service | 10 s | [LNK-9] |
+| Descriptor: forms, steps per check, `equal`/`token_in` entries, pointer segments, template | 16, 4, 8, 8, 256 bytes | [LNK-22] |
 | Account file | 5 MiB | [FIL-1] |
 | `host_data` | 16 KiB | [FIL-2] |
 | `home.url` | 256 characters | [LOG-4] |
@@ -1220,7 +1373,7 @@ its code ([CNV-4]).
 | Code | Meaning | Rules |
 |---|---|---|
 | `bad_json` | Not rootcard JSON | CJ-1–CJ-6 |
-| `bad_field` | A structure violates its schema: missing, unknown or mistyped member, bad encoding or length | CJ-11–CJ-13, HST-22, HST-23 |
+| `bad_field` | A structure violates its schema: missing, unknown or mistyped member, bad encoding or length | CJ-11–CJ-13, HST-22, HST-23, LNK-22 |
 | `unsupported_version` | A `v` this implementation does not support, or a host pointer without its API version | CJ-12, HST-23 |
 | `too_large` | A size limit is exceeded | CJ-8, §19 |
 | `bad_base64` | Not canonical unpadded base64url | B64-2 |
@@ -1261,6 +1414,11 @@ its code ([CNV-4]).
 | `unlock_failed` | Wrong password or recovery key, or a corrupted wrap or ciphertext | LCK-9, VLT-8 |
 | `wrong_account_key` | The vault's account key is not the instance's | VLT-8 |
 | `bad_data_key` | A data key is invalid or outside the writer's namespace | DAT-4, DAT-7 |
+| `bad_link` | A `user.links` value or one link breaks its schema or its service's rules, or repeats an account | LNK-1, LNK-2, LNK-4 |
+| `unsupported` | A link, value or descriptor this verifier cannot check: unknown `v`, service, form, field type or step kind | LNK-2, LNK-13, LNK-22 |
+| `wrong_owner` | A linked service's answer names another account than the link | LNK-10, LNK-18 |
+| `token_missing` | The link token is not where the check looks | LNK-6, LNK-10 |
+| `fetch_failed` | A linked service could not be read: a failed request, too large, or not parseable | LNK-9, LNK-10 |
 | `wrong_challenge` | A proof answers another challenge | PRF-4 |
 | `wrong_recipient` | A proof is for another recipient | PRF-4 |
 | `challenge_unknown` | An unknown, used or other-purpose nonce | CHL-2 |
@@ -1282,7 +1440,10 @@ its code ([CNV-4]).
 - **[VEC-3]** Files: `meta.json` (format version, API version and the label registry, [DS-3]), `primitives.json` (canonical JSON,
   base64url, base32, recovery keys, strict Ed25519 including every rejected class of [CRY-3], X25519, HKDF, Argon2id),
   `log.json` (inceptions, ids, handles, extended tags, logs, incremental verification, extension and fork detection),
-  `vault.json`, `profile.json`, `proof.json` (base URLs, login and fetch messages, proofs), `file.json` (account files and cards).
+  `vault.json`, `profile.json`, `proof.json` (base URLs, login and fetch messages, proofs), `file.json` (account files and cards),
+  `link.json` (answers of linked services, tokens, descriptors, links, requests and checks with recorded answers). The
+  service registry `spec/links/` is checked by the descriptor parser when the vectors are generated, and its canonical
+  form is generated into both cores (`links_registry.rs`, `links-registry.js`).
 - **[VEC-4]** Every rule that a verifier checks has at least one accept and one reject vector, and every
   security-relevant fix adds a regression vector.
 

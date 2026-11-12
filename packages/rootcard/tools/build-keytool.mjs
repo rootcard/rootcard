@@ -46,7 +46,7 @@ const MODULES = ["index.js", "vault-index.js"];
 
 /** The modules inlined into keytool.html. Every module that index.js or vault-index.js re-exports must be here. */
 export const LIB = ["errors.js", "json.js", "encoding.js", "labels.js", "binding.js", "crypto.js", "keys.js", "recovery.js",
-  "id.js", "log.js", "vaultcheck.js", "profile.js", "messages.js", "proof.js", "file.js", "blake2b.js", "argon2.js", "vault.js",
+  "id.js", "log.js", "vaultcheck.js", "profile.js", "messages.js", "proof.js", "links-registry.js", "links.js", "file.js", "blake2b.js", "argon2.js", "vault.js",
   "account.js", "testing.js"];
 
 export function build() {

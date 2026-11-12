@@ -106,6 +106,23 @@ const OPS: &[(&str, Members)] = &[
     ("import_account", &[("file", Json)]),
     ("read_card", &[("card", Json)]),
     ("card_text", &[("card", Json)]),
+    ("parse_response_json", &[("text", Bytes)]),
+    ("link_token", &[("account", Text)]),
+    ("find_link_token", &[("text", Text), ("account", Text)]),
+    ("parse_descriptor", &[("descriptor", Json)]),
+    ("parse_links", &[("data", Json), ("descriptors", Json)]),
+    ("links_value", &[("links", Json)]),
+    ("link_requests", &[("link", Json), ("descriptors", Json)]),
+    ("link_display", &[("link", Json)]),
+    (
+        "check_link",
+        &[
+            ("responses", Json),
+            ("link", Json),
+            ("descriptors", Json),
+            ("account", Text),
+        ],
+    ),
 ];
 
 /// SplitMix64: small, seedable and the same on every platform.

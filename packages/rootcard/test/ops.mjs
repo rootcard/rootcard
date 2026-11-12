@@ -27,6 +27,24 @@ const stateOf = (i) => rc.verifyLog(i.events, { realms: ["global"] });
 const kdf = (k) => ({ m: k.m, t: k.t, p: 1 });
 const home = async (x) => ({ key: rc.formatKey("ed25519", await ed25519Public(hx(x.seed))), url: x.url });
 
+/** A text input: `text` (UTF-8) or `hex`, after `pad` spaces (crates/xtask/src/ops.rs `text_of`). */
+const textOf = (i) => {
+  const body = i.hex !== undefined ? hx(i.hex) : new TextEncoder().encode(i.text);
+  const out = new Uint8Array((i.pad ?? 0) + body.length).fill(0x20);
+  out.set(body, i.pad ?? 0);
+  return out;
+};
+const responseOf = (r) => ("failed" in r ? null : r.txt !== undefined ? { txt: r.txt } : { body: textOf(r) });
+const registryOf = (i) => (i.descriptors ? i.descriptors.map(rc.parseDescriptor) : rc.registry());
+const descriptorOf = (i) => {
+  const reg = registryOf(i);
+  // As in Rust: the link is checked against [LNK-1] before the descriptor is looked up.
+  const link = rc.parseLink(i.link);
+  const d = rc.findDescriptor(reg, i.service ?? link.service);
+  if (!d) throw new rc.RootcardError("unsupported");
+  return d;
+};
+
 export const ops = {
   canonical: (i) => rc.canonicalString(rc.parseJson(hx(i.text))),
   base64url_encode: (i) => rc.base64urlEncode(hx(i.hex)),
@@ -153,6 +171,30 @@ export const ops = {
     return { account: c.account, realm: c.realm, username: c.username, state: c.state };
   },
   card_text: (i) => rc.cardText(i.card),
+  parse_response_json: (i) => {
+    const v = rc.parseResponseJson(hx(i.text));
+    // As text, so a value at the depth limit is not nested one level deeper in the output.
+    return v === undefined ? {} : { canonical: rc.canonicalString(v) };
+  },
+  link_token: (i) => rc.linkToken(i.account),
+  find_link_token: (i) => rc.findLinkToken(textOf(i), i.account),
+  parse_descriptor: (i) => {
+    const d = rc.parseDescriptor(i.descriptor);
+    return { service: d.service, rev: d.rev, retired: d.retired };
+  },
+  parse_links: (i) => rc.parseLinks(i.data, registryOf(i)),
+  links_value: (i) => {
+    const reg = registryOf(i);
+    // As in Rust, the input is converted to links before the library sees it.
+    return rc.linksValue(i.links.map(rc.parseLink), reg);
+  },
+  link_requests: (i) => rc.linkRequests(i.link, descriptorOf(i)),
+  link_display: (i) => rc.linkDisplay(i.link, descriptorOf(i)),
+  check_link: (i) => {
+    const d = descriptorOf(i);
+    rc.checkLink(i.link, i.account, d, i.responses.map(responseOf));
+    return true;
+  },
 };
 
 async function vaultOp(op, i) {

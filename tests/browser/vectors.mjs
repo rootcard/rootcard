@@ -5,7 +5,7 @@
 import { ops, setSha256Sync } from "../../packages/rootcard/test/ops.mjs";
 import { canonicalString, RootcardError } from "../../packages/rootcard/src/index.js";
 
-const FILES = ["primitives.json", "log.json", "vault.json", "profile.json", "proof.json", "file.json"];
+const FILES = ["primitives.json", "log.json", "vault.json", "profile.json", "proof.json", "file.json", "link.json"];
 // Blocks of the deterministic stream precomputed per vector: 32 bytes each. A vector that draws more fails loudly.
 const BLOCKS = 512;
 

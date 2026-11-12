@@ -20,7 +20,7 @@ crates.io and an npm package on npmjs, from one monorepo. Security is the produc
 
 ```
 Cargo.toml              workspace
-crates/rootcard         core (pure): json, encoding, crypto, keys, recovery, id, log, vault, profile, messages,
+crates/rootcard         core (pure): json, encoding, crypto, keys, recovery, id, log, vault, profile, links, messages,
                         binding, proof, account, file, testing
 crates/rootcard-cli     the key tool, binary `rootcard`
 crates/rootcard-host    host-side helpers: store (challenge and identity stores), http (router), peer
@@ -32,8 +32,9 @@ tests/browser           the vectors and keytool.html in real browsers (Playwrigh
 tests/differential      the JS side of the differential test (`xtask differential`, not published)
 spec/SPEC.md            normative specification
 spec/vectors/*.json     shared test vectors (the facit for every implementation)
+spec/links/*.json       the registry of linked services; `xtask vectors` generates it into both cores
 docs/                   plan, design, concepts, getting started, architecture, threat model, host protocol, releasing
-docs/proposals/         drafts that are not normative yet (sign-in, linked accounts)
+docs/proposals/         proposals: sign-in (a draft, not normative), linked accounts (adopted in SPEC §12.3)
 .github/workflows       ci.yml (every push and PR), release.yml (publishes on a GitHub release), advisories.yml (daily)
 .github/ISSUE_TEMPLATE  issue templates; security reports go to private reporting (SECURITY.md)
 CONTRIBUTING.md         the rules below, for people; CODE_OF_CONDUCT.md, SECURITY.md

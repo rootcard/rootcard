@@ -1,9 +1,20 @@
 # Proposal: linked accounts (GitHub, domains and other services)
 
-Status: **draft proposal, not normative.** Nothing here is part of [spec/SPEC.md](../../spec/SPEC.md) or
-[HOST_PROTOCOL.md](../HOST_PROTOCOL.md) yet. Rule identifiers in this document (`[LNK-1]`) are provisional. Adopting
-the proposal means moving the rules into the spec, the threats into [THREAT_MODEL.md](../THREAT_MODEL.md) and the
-functions into [ARCHITECTURE.md](../ARCHITECTURE.md), all in one change (see §11).
+Status: **adopted** into [spec/SPEC.md](../../spec/SPEC.md) §12.3; the spec is normative and wins where this document
+differs. This document keeps the motivation, the evaluation of the alternatives and the decisions (§5.1, §8, §10, §12).
+Differences from the draft below, decided while adopting it (docs/PLAN.md phase 6):
+
+- A value in a URL path fills a whole path segment and is never `.` or `..` ([LNK-8], [LNK-22]): browsers treat
+  `%2e%2e` as a dot segment, so percent-encoding alone did not keep a name from reaching another path.
+- A `domain` is never an IP address or a single label ([LNK-21]), and a verifier that runs on a server connects only to
+  public addresses ([LNK-9]), so links cannot be used to reach internal hosts.
+- Descriptors have a `v` and an exact format ([LNK-22]): forms are `{ "type": "none" }` or a token field (no
+  `prefix`), a `uid` field means the uid is required, and checks are keyed by form.
+- The answer reader is `parse_response_json` ([LNK-9]): `null` and non-integer numbers are dropped, duplicate members
+  rejected. Answers of the wrong kind or number are `bad_field`, and the token is searched in bytes ([LNK-6]).
+- Rules [LNK-15] (the token never changes) and [LNK-16] (the identity side follows the profile) became part of [LNK-5]
+  and the text of §12.3; [LNK-20] (the codes) is SPEC §20. The three ids are not assigned. T-L* threats are
+  THREAT_MODEL.md T47–T58 and AR14–AR17.
 
 ---
 

@@ -87,6 +87,7 @@ pub mod file;
 pub mod id;
 pub mod json;
 pub mod keys;
+pub mod links;
 pub mod log;
 pub mod messages;
 pub mod profile;

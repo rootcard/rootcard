@@ -214,8 +214,8 @@ Planned (details in [docs/PLAN.md](docs/PLAN.md)):
 - **Before 1.0:** getting-started guides and an external review. The Rust parsers, verifiers and host router are
   fuzzed in CI, and the JS core is tested against the Rust core on mutated inputs ([fuzz/](fuzz/README.md)).
 - **Sign-in at other services:** the relying-party flow and `rootcard signin` ([proposal](docs/proposals/signin.md)).
-- **Linked accounts:** show that an identity owns a GitHub account or a domain, checked by anyone
-  ([proposal](docs/proposals/links.md)).
+- **Linked accounts in the key tool:** `rootcard link` and a links panel in `keytool.html`. The format and both cores
+  already check links to GitHub accounts and domains (SPEC §12.3, [CONCEPTS.md §6](docs/CONCEPTS.md)).
 - **Standard profile keys** such as a display name and a small avatar image, with safe display rules.
 - **Passkeys** as a lock type, for phishing resistance.
 - **Host helpers for JavaScript servers.**
@@ -231,7 +231,8 @@ Planned (details in [docs/PLAN.md](docs/PLAN.md)):
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, server usage, dependencies |
 | [docs/HOST_PROTOCOL.md](docs/HOST_PROTOCOL.md) | Recommended HTTP binding for hosts |
 | [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | Goals, attackers, threats, accepted risks |
-| [docs/proposals/](docs/proposals/) | Draft proposals, not normative: [sign-in at other services](docs/proposals/signin.md), [linked accounts](docs/proposals/links.md) |
+| [spec/links/](spec/links/) | The registry of linked services (`github`, `dns`, `web`), bundled with both cores |
+| [docs/proposals/](docs/proposals/) | Proposals: [sign-in at other services](docs/proposals/signin.md) (draft), [linked accounts](docs/proposals/links.md) (adopted in SPEC §12.3) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · [SECURITY.md](SECURITY.md) | How to contribute · the code of conduct · how to report a vulnerability |
 | [docs/RELEASING.md](docs/RELEASING.md) | How releases are prepared and published |
 | [docs/DESIGN.md](docs/DESIGN.md) · [docs/PLAN.md](docs/PLAN.md) | Motivation · setup plan |
