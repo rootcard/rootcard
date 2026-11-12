@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.4 - 2026-11-12
+
 - Linked accounts (SPEC §12.3): the new module `links` with `parse_links`, `links_value`, `link_token`,
   `find_link_token`, `parse_descriptor`, `registry` (the descriptors of `spec/links/`, bundled), `find_descriptor`,
   `link_requests`, `link_display`, `check_link`, `is_domain`, and the types `Link`, `LinkEntry`, `Descriptor`,

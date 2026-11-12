@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.4 - 2026-11-12
+
 - Linked accounts (SPEC §12.3), as in the Rust crate: `parseLink`, `parseLinks`, `linksValue`, `linkToken`,
   `findLinkToken`, `parseDescriptor`, `registry` (the descriptors of `spec/links/`, bundled in
   `src/links-registry.js`), `findDescriptor`, `linkRequests`, `linkDisplay`, `checkLink`, `isDomain` and the constants
@@ -11,6 +13,8 @@ All notable changes to this package are recorded here.
   fetched by the package: the caller performs the requests under [LNK-9] (docs/GETTING_STARTED.md §4.1).
 - `parseResponseJson` reads JSON from outside rootcard (a linked service's answer).
 - `ERROR_CODES` has five new codes: `bad_link`, `unsupported`, `wrong_owner`, `token_missing` and `fetch_failed`.
+- `keytool.html` inlines the new modules, so the page's library has every exported function; the page itself has no
+  links panel yet.
 
 ## 0.3.3 - 2026-11-11
 

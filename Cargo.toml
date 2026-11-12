@@ -5,7 +5,7 @@ members = ["crates/rootcard", "crates/rootcard-cli", "crates/rootcard-host", "cr
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.3.3"
+version = "0.3.4"
 edition = "2024"
 rust-version = "1.95"
 repository = "https://github.com/rootcard/rootcard"
@@ -13,7 +13,7 @@ homepage = "https://github.com/rootcard/rootcard"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-rootcard = { path = "crates/rootcard", version = "0.3.3", default-features = false }
+rootcard = { path = "crates/rootcard", version = "0.3.4", default-features = false }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
