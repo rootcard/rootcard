@@ -566,7 +566,13 @@ pub fn run(op: &str, input: &Map) -> R<Outcome> {
         }
         "card_text" => tryr!(card_text(i.get("card")?)).into(),
         "parse_response_json" => match tryr!(rootcard::json::parse_response_json(&i.hex("text")?)) {
-            Some(v) => Map::new().with("value", v).into(),
+            // As text, so a value at the depth limit is not nested one level deeper in the output.
+            Some(v) => Map::new()
+                .with(
+                    "canonical",
+                    String::from_utf8(canonical(&v)).map_err(|e| e.to_string())?,
+                )
+                .into(),
             None => Map::new().into(),
         },
         "link_token" => tryr!(links::link_token(i.str("account")?)).into(),

@@ -2590,6 +2590,13 @@ fn link_vectors(s: &Scenario) -> Result<Vec<V>, String> {
             m().with("text", h(text.as_bytes())),
         ));
     }
+    let limit = "[".repeat(16) + "\t" + &"[".repeat(16) + &"]".repeat(32);
+    out.push(v(
+        "an answer nested 32 levels",
+        &["LNK-9", "CJ-5"],
+        "parse_response_json",
+        m().with("text", h(limit.as_bytes())),
+    ));
     let deep = "[".repeat(33) + &"]".repeat(33);
     out.push(v(
         "an answer nested 33 levels",

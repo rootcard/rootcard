@@ -173,7 +173,8 @@ export const ops = {
   card_text: (i) => rc.cardText(i.card),
   parse_response_json: (i) => {
     const v = rc.parseResponseJson(hx(i.text));
-    return v === undefined ? {} : { value: v };
+    // As text, so a value at the depth limit is not nested one level deeper in the output.
+    return v === undefined ? {} : { canonical: rc.canonicalString(v) };
   },
   link_token: (i) => rc.linkToken(i.account),
   find_link_token: (i) => rc.findLinkToken(textOf(i), i.account),

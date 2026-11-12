@@ -8,11 +8,7 @@
       "name": "an answer with null, fractions and large numbers",
       "op": "parse_response_json",
       "output": {
-        "value": {
-          "id": 583231,
-          "list": [1,"x"],
-          "login": "alice"
-        }
+        "canonical": "{\"id\":583231,\"list\":[1,\"x\"],\"login\":\"alice\"}"
       },
       "rules": ["LNK-9"]
     },
@@ -32,9 +28,7 @@
       "name": "an answer with escapes",
       "op": "parse_response_json",
       "output": {
-        "value": {
-          "bio": "A😀/\n"
-        }
+        "canonical": "{\"bio\":\"A😀/\\n\"}"
       },
       "rules": ["LNK-9"]
     },
@@ -109,6 +103,17 @@
       "name": "a byte order mark",
       "op": "parse_response_json",
       "rules": ["LNK-9"]
+    },
+    {
+      "input": {
+        "text": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b095b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d"
+      },
+      "name": "an answer nested 32 levels",
+      "op": "parse_response_json",
+      "output": {
+        "canonical": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+      },
+      "rules": ["LNK-9","CJ-5"]
     },
     {
       "error": "bad_json",
