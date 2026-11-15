@@ -173,7 +173,7 @@ account id = SHA-256("rootcard/id/v1" ‖ canonical(inception without signatures
 ```
 handle = username + "#" + first four characters of the account id      e.g.  Astra#3F9C
 ```
-- Usernames follow a `UsernamePolicy` given by the application. The default: 3–20 characters `A–Z a–z 0–9 _ -`, starting
+- Usernames follow a `UsernamePolicy` given by the application. The default: 2–20 characters `A–Z a–z 0–9 _ -`, starting
   with a letter, ASCII only (no look-alike Unicode).
 - The username is part of the inception and **cannot change**, so the handle is as stable as the id.
 - Applications always show the handle and always compare the **full** id.

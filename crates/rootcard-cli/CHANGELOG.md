@@ -4,6 +4,10 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.5 - 2026-11-15
+
+No changes.
+
 ## 0.3.4 - 2026-11-12
 
 No changes.

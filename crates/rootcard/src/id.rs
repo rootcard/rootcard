@@ -33,10 +33,10 @@ pub fn check_username(username: &str) -> Result<()> {
 /// A username policy ([USR-3]): a predicate at least as strict as [USR-1], applied by hosts at registration.
 pub type UsernamePolicy = fn(&str) -> bool;
 
-/// The default username policy: [USR-1], 3 to 20 characters, beginning with `A–Z a–z` ([USR-3]).
+/// The default username policy: [USR-1], 2 to 20 characters, beginning with `A–Z a–z` ([USR-3]).
 pub fn default_username_policy(username: &str) -> bool {
     check_username(username).is_ok()
-        && (3..=20).contains(&username.len())
+        && (2..=20).contains(&username.len())
         && username.as_bytes()[0].is_ascii_alphabetic()
 }
 
@@ -205,7 +205,8 @@ mod tests {
         }
         assert!(default_username_policy("Astra"));
         assert!(!default_username_policy("9lives"));
-        assert!(!default_username_policy("ab"));
+        assert!(default_username_policy("ab"));
+        assert!(!default_username_policy("a"));
     }
 
     #[test]

@@ -895,7 +895,14 @@ fn log_vectors(s: &Scenario) -> Vec<V> {
         "check_username",
         m().with("text", "a".repeat(33)),
     ));
-    for t in ["Astra", "ab", "9lives", "Abcdefghijklmnopqrst", "Abcdefghijklmnopqrstu"] {
+    for t in [
+        "Astra",
+        "ab",
+        "a",
+        "9lives",
+        "Abcdefghijklmnopqrst",
+        "Abcdefghijklmnopqrstu",
+    ] {
         out.push(v(
             &format!("default policy {t:?}"),
             &["USR-3"],

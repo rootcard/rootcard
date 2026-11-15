@@ -384,7 +384,7 @@ and entered only in the key tool ([PWR-6]).
 - **[USR-2]** A username is **case-preserving**: `Astra` and `astra` are different usernames and give different ids. Two
   usernames are **similar** when they are equal after ASCII lower-casing (§8.2).
 - **[USR-3]** An application chooses a **username policy**, a predicate that is at least as strict as [USR-1]. The
-  **default policy** is 3 to 20 characters, beginning with `A–Z a–z`. Hosts apply the policy of the realm at
+  **default policy** is 2 to 20 characters, beginning with `A–Z a–z`. Hosts apply the policy of the realm at
   registration ([HST-3]) → `username_policy`; verifiers of logs received from elsewhere apply only [USR-1].
 - **[USR-4]** A username never changes. It is part of the inception.
 

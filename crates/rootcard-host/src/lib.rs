@@ -85,9 +85,9 @@ pub struct UsernamePolicy {
 }
 
 impl UsernamePolicy {
-    /// The default policy: 3 to 20 characters, beginning with a letter ([USR-3]).
+    /// The default policy: 2 to 20 characters, beginning with a letter ([USR-3]).
     pub const DEFAULT: UsernamePolicy = UsernamePolicy {
-        min: 3,
+        min: 2,
         max: 20,
         first_letter: true,
     };
