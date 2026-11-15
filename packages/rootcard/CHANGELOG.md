@@ -4,6 +4,8 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+## 0.3.5 - 2026-11-15
+
 - `defaultUsernamePolicy` accepts usernames of 2 characters, as in the Rust crate: the default policy ([USR-3]) is now
   2 to 20 characters, beginning with `A–Z a–z`. No format change. `keytool.html` is rebuilt with it.
 
