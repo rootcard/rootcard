@@ -103,7 +103,7 @@ and addresses: every signature a client relies on is checked against keys in a v
   "key": "ed25519:<current host key>",
   "retired_keys"?: [ "ed25519:<earlier host key>", ... ],
   "urls": [ "<base URL>", ... ],                       the first is preferred
-  "realms": [ { "realm": "global", "username_policy"?: { "min": 3, "max": 20, "first": "letter" } } ],
+  "realms": [ { "realm": "global", "username_policy"?: { "min": 2, "max": 20, "first": "letter" } } ],
   "peers"?: [ "ed25519:<host key>", ... ] }
 ```
 A client registering an identity uses `key` and the base URL it is talking to as the new instance's `home` ([CLT-1]).

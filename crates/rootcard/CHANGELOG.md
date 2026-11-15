@@ -4,6 +4,10 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- `id::default_username_policy` accepts usernames of 2 characters: the default policy ([USR-3]) is now 2 to 20
+  characters, beginning with `A–Z a–z`. No format change: [USR-1] already allowed 1 to 32 characters, so every existing
+  id stays valid. The vectors in `spec/vectors/log.json` say `"ab"` passes and add `"a"`, which does not.
+
 ## 0.3.4 - 2026-11-12
 
 - Linked accounts (SPEC §12.3): the new module `links` with `parse_links`, `links_value`, `link_token`,

@@ -4,6 +4,9 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- `UsernamePolicy::DEFAULT` has `min: 2` (was 3), so a host with the default policy registers usernames of 2
+  characters ([USR-3]); the configuration descriptor (HOST_PROTOCOL.md §2) reports `"min": 2`.
+
 ## 0.3.4 - 2026-11-12
 
 No changes.

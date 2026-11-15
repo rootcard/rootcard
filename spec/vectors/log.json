@@ -240,6 +240,15 @@
       },
       "name": "default policy \"ab\"",
       "op": "default_username_policy",
+      "output": true,
+      "rules": ["USR-3"]
+    },
+    {
+      "input": {
+        "text": "a"
+      },
+      "name": "default policy \"a\"",
+      "op": "default_username_policy",
       "output": false,
       "rules": ["USR-3"]
     },
