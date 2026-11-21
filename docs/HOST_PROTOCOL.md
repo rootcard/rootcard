@@ -354,7 +354,7 @@ POST /id/{account}/instance at the new host   → receipt; the new host pushes t
 ## 8. Running a host *(informative)*
 
 `rootcard-host` implements these endpoints as framework-independent handlers over two storage traits;
-docs/ARCHITECTURE.md describes them. Whatever the implementation, a production host needs:
+docs/ARCHITECTURE.md describes them, and docs/HOSTING.md is the operators' guide (proxy, storage, backups, keys). Whatever the implementation, a production host needs:
 
 - **Shared storage** for all its servers with compare-and-swap updates ([HST-19]): per identity the events, the log
   state, the vault and the profile; a unique index on `(realm, lower-case username, tag)`; challenges with a 60 s expiry

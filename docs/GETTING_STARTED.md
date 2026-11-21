@@ -148,7 +148,8 @@ cargo add rootcard --no-default-features   # verification only: no Argon2id, X25
 cargo add rootcard-host getrandom zeroize
 ```
 
-`rootcard-host` is a library, not a server. `Host` holds the rules of SPEC §17 over three storage traits, and
+`rootcard-host` is a library, not a server. Running it in production (proxy, storage, backups, the host key, updates)
+is in [HOSTING.md](HOSTING.md). `Host` holds the rules of SPEC §17 over three storage traits, and
 `http::route` turns a request of the HTTP binding into a response. You supply the HTTP server, the storage, the clock,
 random bytes and the host key.
 
@@ -313,8 +314,9 @@ tool for everything high power:
 | add a password for another device | `rootcard add-password` |
 | replace a recovery key that may be exposed | `rootcard rotate-recovery` |
 
-`keytool.html` is one file that works from the user's own disk (`file://`) and ships in the npm package; point users to
-that published copy rather than serving it from your host, so a compromised host cannot change the page that asks for the recovery key
+`keytool.html` is one file that works from the user's own disk (`file://`). It ships in the npm package and is attached,
+signed, to every GitHub release with the key tool binaries (HOSTING.md §2); point users to that published copy rather
+than serving it from your host, so a compromised host cannot change the page that asks for the recovery key
 (THREAT_MODEL.md AR2). The CLI's options are in `crates/rootcard-cli/README.md` and `rootcard help`.
 
 ## 6. Try it locally

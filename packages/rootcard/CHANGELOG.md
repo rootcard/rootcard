@@ -4,6 +4,9 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- `keytool.html` is also attached to every GitHub release as `rootcard-keytool-<version>.html`, signed with a GitHub
+  artifact attestation like the other release files (docs/HOSTING.md §2.2).
+
 ## 0.3.5 - 2026-11-15
 
 - `defaultUsernamePolicy` accepts usernames of 2 characters, as in the Rust crate: the default policy ([USR-3]) is now

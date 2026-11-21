@@ -96,6 +96,30 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo check --workspace --all-targets
 
+  binaries:
+    name: Key tool builds static for Linux (as the release does)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch
+        with:
+          toolchain: stable
+          targets: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Zig and cargo-zigbuild (the versions of release.yml)
+        run: |
+          python3 -m pip install --user --break-system-packages ziglang==0.17.1
+          cargo install cargo-zigbuild --version 0.24.1 --locked
+      - name: Build both targets; the x86_64 binary runs
+        run: |
+          for target in x86_64-unknown-linux-musl aarch64-unknown-linux-musl; do
+            cargo zigbuild --release --locked -p rootcard-cli --target "$target"
+          done
+          file target/*-unknown-linux-musl/release/rootcard
+          target/x86_64-unknown-linux-musl/release/rootcard --version
+
   fuzz:
     name: Fuzz (${{ matrix.target }}, 2 min)
     runs-on: ubuntu-latest

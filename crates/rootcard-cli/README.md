@@ -7,8 +7,23 @@ besides `keytool.html` where a recovery key is entered (SPEC [PWR-6]).
 > the two ways to use it (a safer username-and-password login for your own service, or an ID card across services),
 > how it compares with other login methods, and the roadmap.
 
+## Install
+
+Every [GitHub release](https://github.com/rootcard/rootcard/releases) has the binary for Linux (static, x86_64 and
+arm64), macOS (Apple silicon and Intel) and Windows (x86_64), built from the release tag in CI and signed with a GitHub
+artifact attestation. Check the download before you run it:
+
 ```sh
-cargo install rootcard-cli
+gh attestation verify rootcard-cli-<version>-<target>.tar.gz --repo rootcard/rootcard
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+Or build it: `cargo install rootcard-cli --locked`. More in
+[docs/HOSTING.md §2](https://github.com/rootcard/rootcard/blob/main/docs/HOSTING.md#2-release-files-and-how-to-check-them).
+
+## Use
+
+```sh
 rootcard new --realm global --username Astra --host https://id.example.com
 rootcard restore --card Astra-3F9C.card.json --account Astra-3F9C.rootcard.json --host https://other.example
 rootcard reset-password --card Astra-3F9C.card.json --from https://other.example

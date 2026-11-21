@@ -4,6 +4,11 @@ All notable changes to this package are recorded here.
 
 ## Unreleased
 
+- Every GitHub release has the key tool as binaries for `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`
+  (static), `aarch64-apple-darwin`, `x86_64-apple-darwin` and `x86_64-pc-windows-msvc`, built from the tag in CI and
+  signed with a GitHub artifact attestation (Sigstore build provenance), with `SHA256SUMS`. The README says how to check
+  a download; docs/HOSTING.md has the details.
+
 ## 0.3.5 - 2026-11-15
 
 No changes.

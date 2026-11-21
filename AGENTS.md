@@ -15,6 +15,8 @@ crates.io and an npm package on npmjs, from one monorepo. Security is the produc
    It cites SPEC rule ids; update it when a rule it explains changes
 9. [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md): code for applications, hosts and relying parties. Its examples
    call the public API; update it when a function it shows or a flow it walks through changes
+10. [docs/HOSTING.md](docs/HOSTING.md): operators' guide: the signed release files and how to check them, addresses,
+   proxy, storage, backups, the host key and updates. Update it when the release files or a host's duties change
 
 ## Layout
 
@@ -24,7 +26,7 @@ crates/rootcard         core (pure): json, encoding, crypto, keys, recovery, id,
                         binding, proof, account, file, testing
 crates/rootcard-cli     the key tool, binary `rootcard`
 crates/rootcard-host    host-side helpers: store (challenge and identity stores), http (router), peer
-crates/xtask            vector generation, label registry, repo and release checks, differential test of the JS core
+crates/xtask            vector generation, label registry, repo and release checks, release notes, differential test
 fuzz                    cargo fuzz targets for parsers, verifiers and the host router (own workspace, not published)
 packages/rootcard       npm package: plain ES modules with the core's module names, zero dependencies, WebCrypto
 packages/rootcard/keytool.html   standalone key tool page (works from file://), built by tools/build-keytool.mjs
@@ -33,9 +35,11 @@ tests/differential      the JS side of the differential test (`xtask differentia
 spec/SPEC.md            normative specification
 spec/vectors/*.json     shared test vectors (the facit for every implementation)
 spec/links/*.json       the registry of linked services; `xtask vectors` generates it into both cores
-docs/                   plan, design, concepts, getting started, architecture, threat model, host protocol, releasing
+docs/                   plan, design, concepts, getting started, hosting, architecture, threat model, host protocol,
+                        releasing
 docs/proposals/         proposals: sign-in (a draft, not normative), linked accounts (adopted in SPEC §12.3)
-.github/workflows       ci.yml (every push and PR), release.yml (publishes on a GitHub release), advisories.yml (daily)
+.github/workflows       ci.yml (every push and PR), release.yml (publishes on a tag vX.Y.Z: packages, signed binaries,
+                        notes), advisories.yml (daily)
 .github/ISSUE_TEMPLATE  issue templates; security reports go to private reporting (SECURITY.md)
 CONTRIBUTING.md         the rules below, for people; CODE_OF_CONDUCT.md, SECURITY.md
 ```
@@ -55,8 +59,8 @@ cargo run --release -p xtask -- differential --cases 20000   # JS core against R
 (cd fuzz && cargo run --bin seeds && cargo +nightly fuzz run -O -a log -- -max_total_time=60)   # after changing a parser or verifier; fuzz/README.md
 ```
 
-For a release pull request, also `cargo run -p xtask -- release-check --tag vX.Y.Z` and the dry runs in
-[docs/RELEASING.md](docs/RELEASING.md) §3.
+For a release pull request, also `cargo run -p xtask -- release-check --tag vX.Y.Z`, the dry runs and the release notes
+preview (`xtask release-notes`) in [docs/RELEASING.md](docs/RELEASING.md) §3.
 
 Run all of them before every commit. CI runs them too.
 
@@ -136,6 +140,8 @@ PLAN.md that THREAT_MODEL.md did not know about. So, for every change:
 | a spec rule, label or error code | SPEC (and §20 for codes), vectors, THREAT_MODEL.md if a threat or its mitigation changes |
 | an endpoint, status or header | HOST_PROTOCOL.md, and the router's tests |
 | a component, store trait, schema or dependency | ARCHITECTURE.md (§3.1 for the SQL schema, §5 for the budget) |
+| the release workflow, its platforms or its files | RELEASING.md §4, HOSTING.md §2, `TARGETS` in `crates/xtask/src/notes.rs` |
+| what a host operator must do (storage, keys, proxy, limits) | HOSTING.md, and GETTING_STARTED.md §3.4 |
 | a plan item | tick it in PLAN.md and say what was decided, with the rule ids |
 | a review finding that is not fixed now | PLAN.md **and** THREAT_MODEL.md (a threat with its residual risk, or an accepted risk) |
 | the released version | README status line and `SECURITY.md` supported versions (RELEASING.md §3 step 4) |
@@ -152,4 +158,5 @@ PLAN.md that THREAT_MODEL.md did not know about. So, for every change:
   exactly, and only when the owner asks for a release.
 - Agents prepare the release pull request and stop. They never tag, create a GitHub release, publish (`cargo publish`
   or `npm publish` without `--dry-run`), handle registry tokens, or yank. Publishing happens only in
-  `.github/workflows/release.yml` when the owner publishes a GitHub release.
+  `.github/workflows/release.yml` when the owner pushes the tag or makes a GitHub release (which makes the tag); the
+  workflow builds and signs the binaries and writes the release notes from the changelogs.

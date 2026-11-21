@@ -239,6 +239,7 @@ Few dependencies, each justified (AGENTS.md rule 6). The budget:
 | `tests/browser` (not published, CI only) | `playwright` at an exact version, installed in the CI job only: the vectors and `keytool.html` in Chromium, Firefox and WebKit |
 | `crates/rootcard-cli/tests` (not published) | `rootcard-host` by path only, so `cargo publish` drops it: the key tool's end-to-end test runs a host in the test process |
 | `xtask` (not published) | `rootcard`, `zeroize`; `curve25519-dalek`, `sha2`: only to construct the rejected signature classes of the vectors. The differential test runs Node on `tests/differential/run.mjs`, which imports the npm package and its vector operations and has no dependencies |
+| Release binaries (CI only) | `zig` (pip `ziglang`) and `cargo-zigbuild` at exact versions, to link the static Linux builds of the key tool; `actions/attest-build-provenance` to sign the release files. Neither is in any package |
 | `fuzz` (not published, its own workspace) | `libfuzzer-sys` (with `arbitrary`, and `cc` to build libFuzzer): the fuzz targets, run with `cargo fuzz` on a dated nightly toolchain in CI. Outside the main workspace, so `cargo deny` and the MSRV job do not cover it; nothing from it is shipped |
 
 The budget is enforced, not only written down. `cargo deny` (`deny.toml`, the CI job `deny`) checks the main
@@ -271,6 +272,7 @@ mode of the same parser, so linked accounts add no dependency.
 | [docs/THREAT_MODEL.md](THREAT_MODEL.md) | Security | Goals, attackers, threats, accepted risks |
 | [docs/HOST_PROTOCOL.md](HOST_PROTOCOL.md) | Binding | Recommended HTTP endpoints for hosts |
 | docs/ARCHITECTURE.md | Overview | This document: components, server usage, dependencies |
+| [docs/HOSTING.md](HOSTING.md) | Guide | Release files and their signatures; running a host in production |
 | [docs/RELEASING.md](RELEASING.md) | Process | Preparing, publishing and reproducing releases |
 | [docs/proposals/](proposals/) | Drafts | Proposals: sign-in at other services (draft), linked accounts (adopted in SPEC §12.3) |
 | [fuzz/README.md](../fuzz/README.md) | Process | The fuzz targets and how to run them |

@@ -8,11 +8,16 @@
 //! an npm package with an empty dependency tree, and the documents that name the current version. `release-check` runs
 //! both and the release's own checks.
 //!
+//! `release-notes --tag vX.Y.Z --sums SHA256SUMS [--keep FILE]` prints the text of the GitHub release: the changelogs'
+//! sections for the version, the release files and how to verify them, followed by the text of `FILE` (the release's
+//! earlier text) without the block an earlier run generated ([`notes`]).
+//!
 //! `differential [--cases N] [--seed S]` runs the JS core against the Rust core on mutated vector inputs and requires
 //! the same output or error code ([`differential`]).
 
 mod differential;
 mod generate;
+mod notes;
 mod ops;
 mod resign;
 
@@ -521,6 +526,32 @@ fn release_check(tag: Option<&str>) -> Result<String, String> {
     }
 }
 
+/// The release notes for `tag` ([`notes`]), with the earlier text of the release from `keep` after them.
+fn release_notes(tag: &str, sums: &str, keep: Option<&str>) -> Result<(), String> {
+    let manifest = read("Cargo.toml")?;
+    let version =
+        toml_value(&manifest, "workspace.package", "version").ok_or("Cargo.toml: no version in [workspace.package]")?;
+    if tag != format!("v{version}") {
+        return Err(format!(
+            "tag {tag:?} does not match the version (expected \"v{version}\")"
+        ));
+    }
+    let mut sections = Vec::new();
+    for (name, changelog) in RELEASED {
+        let section = notes::changelog_section(&read(changelog)?, &version)
+            .ok_or_else(|| format!("{changelog}: no `## {version}` section for {name}"))?;
+        sections.push((name, section));
+    }
+    let read_file = |path: &str| std::fs::read_to_string(path).map_err(|e| format!("reading {path}: {e}"));
+    let generated = notes::release_notes(&version, &sections, &read_file(sums)?)?;
+    let text = match keep {
+        Some(path) => notes::merge(&generated, &read_file(path)?),
+        None => generated,
+    };
+    print!("{text}");
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
@@ -529,10 +560,13 @@ fn main() -> ExitCode {
         ["repo-check"] => repo_check(),
         ["release-check"] => release_check(None).map(|v| println!("{v}")),
         ["release-check", "--tag", tag] => release_check(Some(tag)).map(|v| println!("{v}")),
+        ["release-notes", "--tag", tag, "--sums", sums] => release_notes(tag, sums, None),
+        ["release-notes", "--tag", tag, "--sums", sums, "--keep", keep] => release_notes(tag, sums, Some(keep)),
         ["differential", options @ ..] => differential::differential(options),
         _ => Err("usage: cargo run -p xtask -- vectors [--check | --update]\n       \
                   cargo run -p xtask -- repo-check\n       \
                   cargo run -p xtask -- release-check [--tag vX.Y.Z]\n       \
+                  cargo run -p xtask -- release-notes --tag vX.Y.Z --sums SHA256SUMS [--keep FILE]\n       \
                   cargo run -p xtask -- differential [--cases N] [--seed S]"
             .into()),
     };
@@ -663,6 +697,41 @@ mod tests {
         );
         assert_eq!(version_doc_problems("0.1.4", "> Status: **0.1.4**", security).len(), 1);
         assert!(version_doc_problems("1.2.0", "Status: **1.2.0**", "| 1.x | Yes |").is_empty());
+    }
+
+    #[test]
+    fn this_version_has_release_notes() {
+        // Every file the release workflow attaches, by the names it gives them, for the current version.
+        let version = toml_value(&read("Cargo.toml").unwrap(), "workspace.package", "version").unwrap();
+        let mut files = vec![
+            format!("rootcard-{version}.crate"),
+            format!("rootcard-host-{version}.crate"),
+            format!("rootcard-cli-{version}.crate"),
+            format!("rootcard-{version}.tgz"),
+            format!("rootcard-keytool-{version}.html"),
+        ];
+        let workflow = read(".github/workflows/release.yml").unwrap();
+        let built = workflow.matches("target: ").count() - workflow.matches("target: ${{").count();
+        assert_eq!(
+            built,
+            notes::TARGETS.len(),
+            "release.yml builds other targets than notes::TARGETS"
+        );
+        for (target, _) in notes::TARGETS {
+            assert!(
+                workflow.contains(&format!("target: {target},")),
+                "release.yml does not build {target}"
+            );
+            let ext = if target.contains("windows") { "zip" } else { "tar.gz" };
+            files.push(format!("rootcard-cli-{version}-{target}.{ext}"));
+        }
+        let sums: String = files.iter().map(|f| format!("{}  {f}\n", "0".repeat(64))).collect();
+        let sections: Vec<_> = RELEASED
+            .iter()
+            .map(|(name, log)| (*name, notes::changelog_section(&read(log).unwrap(), &version).unwrap()))
+            .collect();
+        let text = notes::release_notes(&version, &sections, &sums).unwrap();
+        assert!(files.iter().all(|f| text.contains(&format!("| `{f}` |"))));
     }
 
     #[test]

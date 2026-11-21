@@ -329,6 +329,17 @@ logs the same way.
 - [x] Release workflow: tag `vX.Y.Z` → crates published in dependency order with crates.io trusted publishing, npm published
   with trusted publishing and `--provenance`, GitHub release with checksums (`.github/workflows/release.yml`, prepared
   ahead of phase 6; the owner's one-time setup is docs/RELEASING.md §2)
+- [x] Signed binary releases and generated release notes. Decided: the release workflow runs on the pushed tag
+  `vX.Y.Z` (a GitHub release made by hand makes the tag and may have no text) instead of on a published release. It
+  builds the key tool for Linux (static musl, x86_64 and arm64, with `cargo zigbuild`), macOS (arm64, x86_64) and
+  Windows (x86_64) before anything is published, and attaches the binaries, `keytool.html`, the packages and
+  `SHA256SUMS` to the release, every file signed with a GitHub artifact attestation (Sigstore build provenance through
+  the workflow's OIDC identity: no signing key to keep; the bundle is attached as well). The notes are each package's
+  changelog section, the files and how to verify them (`xtask release-notes`); they go ahead of any text written by
+  hand, and a re-run (by hand, with the tag) replaces only its own block. The binaries are not reproducible; the
+  attestation ties them to the tag (THREAT_MODEL.md T32). CI builds the static Linux binaries on every pull request.
+  docs/HOSTING.md is the operators' guide: the release files and how to check them, addresses, proxy, storage,
+  backups and what a restore means for revoked instances (AR4), the host key and updates
 - [x] Release preparation for agents (docs/RELEASING.md, AGENTS.md rule 10) and `xtask release-check` (versions,
   changelogs, tag, vectors); CI packages every crate and the npm package on each pull request (dry run)
 - [x] Documentation: crate docs, `README` per package, a "getting started" for apps and for hosts. Done:

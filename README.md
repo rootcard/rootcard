@@ -203,6 +203,7 @@ The log, the vault, the recovery card, proofs and verification are explained in 
 | crates.io | `rootcard-cli` | The key tool (`rootcard` binary): recovery-key operations |
 | crates.io | `rootcard-host` | Helpers for hosts (servers): challenges, stores, HTTP-agnostic handlers |
 | npm | `rootcard` | The same core in plain ES modules, zero dependencies, browser and Node (WebCrypto), and the standalone key tool page `keytool.html` |
+| GitHub releases | `rootcard` binaries, `keytool.html` | The key tool for Linux (static), macOS and Windows and the key tool page, built in CI and signed (artifact attestations): [docs/HOSTING.md §2](docs/HOSTING.md#2-release-files-and-how-to-check-them) |
 
 The specification in [`spec/`](spec/) and its test vectors are the source of truth. Rust and JavaScript must produce the same
 bytes for the same inputs.
@@ -227,6 +228,7 @@ Planned (details in [docs/PLAN.md](docs/PLAN.md)):
 |---|---|
 | [spec/SPEC.md](spec/SPEC.md) | The normative specification, with [test vectors](spec/vectors/) |
 | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Adding rootcard to an application, running a host, checking proofs: code for each role |
+| [docs/HOSTING.md](docs/HOSTING.md) | Installing and verifying the signed key tool, and running a host in production: proxy, storage, backups, keys, updates |
 | [docs/CONCEPTS.md](docs/CONCEPTS.md) | The log, the vault, the recovery card, proofs and verification: how and when they are used |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, server usage, dependencies |
 | [docs/HOST_PROTOCOL.md](docs/HOST_PROTOCOL.md) | Recommended HTTP binding for hosts |

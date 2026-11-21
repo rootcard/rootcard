@@ -1,12 +1,29 @@
-# Publishes a release when the owner publishes a GitHub release with tag vX.Y.Z (docs/RELEASING.md).
-# Crates go to crates.io and the npm package to npmjs, both with trusted publishing (OIDC): there are no registry tokens
-# in this repository or its secrets. The publishing jobs run in the `release` environment, which the owner protects.
+# Publishes a release when the tag vX.Y.Z is pushed (docs/RELEASING.md §4). The owner either pushes the tag or makes a
+# release by hand on GitHub, which makes the tag; its text may be empty.
+#
+# - verify: every check, and the tag is the version in Cargo.toml.
+# - binaries: the key tool `rootcard` for Linux (static), macOS and Windows. Nothing is published unless all of them
+#   build.
+# - crates, npm: crates.io and npmjs with trusted publishing (OIDC): there are no registry tokens in this repository or
+#   its secrets. These jobs run in the `release` environment, which the owner protects.
+# - release: the packages built from the tag, checked byte for byte against the registries, the binaries, the key tool
+#   page and SHA256SUMS; all of them signed with a GitHub artifact attestation (Sigstore build provenance), attached to
+#   the GitHub release with notes from the changelogs (`xtask release-notes`). A release made by hand keeps its title
+#   and its text, after the notes.
+#
+# Run by hand (Actions → Release → Run workflow) with an existing tag, it publishes nothing: it builds and checks the
+# files again and replaces the release's files and notes, keeping the text written by hand.
 
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The released tag to rebuild the release files and notes for, e.g. v0.4.0"
+        required: true
 
 permissions:
   contents: read
@@ -18,8 +35,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
-  TAG: ${{ github.event.release.tag_name }}
-  PRERELEASE: ${{ github.event.release.prerelease }}
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   verify:
@@ -28,9 +44,11 @@ jobs:
     outputs:
       version: ${{ steps.check.outputs.version }}
       npm_tag: ${{ steps.check.outputs.npm_tag }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          ref: refs/tags/${{ env.TAG }}
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch
         with:
@@ -53,24 +71,89 @@ jobs:
         run: |
           version="$(cargo run --locked -q -p xtask -- release-check --tag "$TAG")"
           case "$version" in
-            *-*) npm_tag=next;   expected_prerelease=true ;;
-            *)   npm_tag=latest; expected_prerelease=false ;;
+            *-*) npm_tag=next;   prerelease=true ;;
+            *)   npm_tag=latest; prerelease=false ;;
           esac
-          if [ "$PRERELEASE" != "$expected_prerelease" ]; then
-            echo "version $version needs the GitHub release's pre-release flag set to $expected_prerelease" >&2
-            exit 1
-          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "npm_tag=$npm_tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
       - name: Crates package and build from their tarballs
         run: cargo publish --workspace --locked --dry-run
       - name: npm package
         working-directory: packages/rootcard
         run: npm publish --dry-run --tag "${{ steps.check.outputs.npm_tag }}"
 
+  binaries:
+    name: Key tool (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, zig: true, run: true }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-musl, zig: true, run: false }
+          - { os: macos-latest, target: aarch64-apple-darwin, zig: false, run: true }
+          - { os: macos-latest, target: x86_64-apple-darwin, zig: false, run: false }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, zig: false, run: true }
+    env:
+      TARGET: ${{ matrix.target }}
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+      - name: Zig and cargo-zigbuild, for static Linux builds (ring needs a C compiler for the target)
+        if: matrix.zig
+        run: |
+          python3 -m pip install --user --break-system-packages ziglang==0.17.1
+          cargo install cargo-zigbuild --version 0.24.1 --locked
+      - name: Build
+        shell: bash
+        run: |
+          if [ "${{ matrix.zig }}" = true ]; then
+            cargo zigbuild --release --locked -p rootcard-cli --target "$TARGET"
+          else
+            cargo build --release --locked -p rootcard-cli --target "$TARGET"
+          fi
+      - name: The binary runs and names the tag's version
+        if: matrix.run
+        shell: bash
+        run: |
+          out="$("target/$TARGET/release/rootcard" --version)"
+          echo "$out"
+          case "$out" in "rootcard ${TAG#v} "*) ;; *) echo "expected rootcard ${TAG#v}" >&2; exit 1 ;; esac
+      - name: Archive (the binary, its README and changelog, the licenses)
+        shell: bash
+        run: |
+          name="rootcard-cli-${TAG#v}-$TARGET"
+          exe=rootcard
+          case "$TARGET" in *windows*) exe=rootcard.exe ;; esac
+          mkdir -p "dist/$name"
+          cp "target/$TARGET/release/$exe" crates/rootcard-cli/README.md crates/rootcard-cli/CHANGELOG.md \
+            LICENSE-MIT LICENSE-APACHE "dist/$name/"
+          cd dist
+          case "$TARGET" in
+            *windows*) 7z a -tzip "$name.zip" "$name" ;;
+            *) tar -czf "$name.tar.gz" "$name" ;;
+          esac
+          rm -r "$name"
+          ls -l
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
   crates:
     name: Publish crates
-    needs: verify
+    needs: [verify, binaries]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -79,6 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          ref: refs/tags/${{ env.TAG }}
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch
         with:
@@ -93,7 +177,8 @@ jobs:
 
   npm:
     name: Publish npm package
-    needs: verify
+    needs: [verify, binaries]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -102,6 +187,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          ref: refs/tags/${{ env.TAG }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -113,15 +199,25 @@ jobs:
         working-directory: packages/rootcard
         run: npm publish --provenance --access public --tag "${{ needs.verify.outputs.npm_tag }}"
 
-  assets:
-    name: Attach packages and checksums
-    needs: [verify, crates, npm]
+  release:
+    name: GitHub release (signed files and notes)
+    needs: [verify, binaries, crates, npm]
+    # On a tag push only after both registries have the packages; run by hand, the publishing jobs are skipped.
+    if: >-
+      always() && needs.verify.result == 'success' && needs.binaries.result == 'success' &&
+      (github.event_name == 'workflow_dispatch' || (needs.crates.result == 'success' && needs.npm.result == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ needs.verify.outputs.prerelease }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          ref: refs/tags/${{ env.TAG }}
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable branch
         with:
@@ -133,12 +229,9 @@ jobs:
         run: |
           mkdir dist
           cargo package --workspace --exclude xtask --locked --no-verify
-          cp target/package/*-"${{ needs.verify.outputs.version }}".crate dist/
+          cp target/package/*-"$VERSION".crate dist/
           (cd packages/rootcard && npm pack --pack-destination ../../dist)
-          (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
       - name: The packages built from the tag are the ones the registries serve
-        env:
-          VERSION: ${{ needs.verify.outputs.version }}
         run: |
           # The registries can take a few minutes to show a new version; retry before failing.
           registry() {
@@ -166,7 +259,39 @@ jobs:
           if [ "$expected" = "$actual" ]; then echo "rootcard (npm): $actual"; else
             echo "rootcard (npm): built $actual, npm serves $expected" >&2; failed=1; fi
           exit "$failed"
-      - name: Upload to the GitHub release
-        run: gh release upload "$TAG" dist/* --clobber
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: binary-*
+          path: dist
+          merge-multiple: true
+      - name: The key tool page, and the checksums of every file
+        run: |
+          cp packages/rootcard/keytool.html "dist/rootcard-keytool-$VERSION.html"
+          (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
+      - name: Sign every file (GitHub artifact attestation, Sigstore build provenance)
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
+      - name: The signatures as a bundle, for verifying without the GitHub API
+        env:
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: cp "$BUNDLE" "dist/rootcard-$VERSION.sigstore.json"
+      - name: Notes and files on the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            # Made by hand (its text may be empty), or by an earlier run: keep the text written by hand, after ours.
+            gh release view "$TAG" --json body --jq .body > earlier.md
+            cargo run --locked -q -p xtask -- release-notes --tag "$TAG" --sums dist/SHA256SUMS --keep earlier.md > notes.md
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --notes-file notes.md --prerelease="$PRERELEASE"
+          else
+            cargo run --locked -q -p xtask -- release-notes --tag "$TAG" --sums dist/SHA256SUMS > notes.md
+            flags=""
+            if [ "$PRERELEASE" = true ]; then flags="--prerelease"; fi
+            gh release create "$TAG" dist/* --verify-tag --title "rootcard $VERSION" --notes-file notes.md $flags
+          fi
+          cat notes.md
